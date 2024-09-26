@@ -21,7 +21,7 @@ jobs:
         run: go mod tidy
 
       - name: Run controller tests
-        run: go test -coverprofile=ctrl_coverage.out ./internal/controller
+        run: go test -coverprofile=ctrl_coverage.out ./internal/ctrl
 
       - name: Update coverage report
         uses: ncruces/go-coverage-report@v0
