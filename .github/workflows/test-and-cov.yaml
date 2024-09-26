@@ -27,7 +27,7 @@ jobs:
         run: go test -coverprofile=ctrl_coverage.out ./internal/ctrl
 
       - name: Run handler tests
-        run: go test -coverprofile=hdl_coverage.out ./internal/handler/grpc
+        run: go test -coverprofile=hdl_coverage.out ./internal/hdl/grpc
 
       - name: Merge coverage reports
         run: gocovmerge ctrl_coverage.out hdl_coverage.out > coverage.out
