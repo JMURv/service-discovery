@@ -1,0 +1,34 @@
+syntax = "proto3";
+package service_discovery;
+option go_package = "github.com/JMURv/par-pro/api/pb/service-discovery";
+
+message Empty {}
+
+service ServiceDiscovery {
+  rpc Register(NameAndAddressMsg) returns (Empty);
+  rpc Deregister(NameAndAddressMsg) returns (Empty);
+  rpc FindService(ServiceNameMsg) returns (ServiceAddressMsg);
+  rpc ListServices(Empty) returns (ListNamesMsg);
+  rpc ListAddrs(ServiceNameMsg) returns (ListAddrsMsg);
+}
+
+message NameAndAddressMsg {
+  string name = 1;
+  string address = 2;
+}
+
+message ServiceNameMsg {
+  string name = 1;
+}
+
+message ServiceAddressMsg {
+  string address = 1;
+}
+
+message ListAddrsMsg {
+  repeated string address = 1;
+}
+
+message ListNamesMsg {
+  repeated string name = 1;
+}

@@ -1,0 +1,7 @@
+serviceName: "svc-discovery"
+
+server:
+  mode: "dev"
+  port: 50030
+  scheme: "http"
+  domain: "localhost"

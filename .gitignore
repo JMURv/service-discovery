@@ -1,0 +1,4 @@
+.idea
+*.config.yaml
+!example.config.yaml
+discovery.db

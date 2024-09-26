@@ -1,0 +1,26 @@
+version: 3
+
+vars:
+  USERNAME: jmurv
+  IMAGE_NAME: service-discovery
+
+tasks:
+  app:
+    desc: Run app
+    cmds:
+      - "go run cmd/main.go"
+
+  pb:
+    desc: Gen Proto file
+    cmds:
+      - "protoc --go_out=. --go-grpc_out=. --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative api/pb/discovery.proto"
+
+  build:
+    desc: Build app
+    cmds:
+      - "docker build --no-cache -t {{.USERNAME}}/{{.IMAGE_NAME}}:latest ."
+
+  push:
+    desc: Push image to docker registry
+    cmds:
+      - "docker push {{.USERNAME}}/{{.IMAGE_NAME}}:latest"
