@@ -15,13 +15,21 @@ import (
 	"net"
 )
 
+type Ctrl interface {
+	Register(ctx context.Context, name, addr string) error
+	Deregister(ctx context.Context, name, addr string) error
+	FindServiceByName(ctx context.Context, name string) (string, error)
+	ListServices(ctx context.Context) ([]string, error)
+	ListAddrs(ctx context.Context, name string) ([]string, error)
+}
+
 type Handler struct {
 	pb.ServiceDiscoveryServer
 	srv  *grpc.Server
-	ctrl *ctrl.Controller
+	ctrl Ctrl
 }
 
-func New(ctrl *ctrl.Controller) *Handler {
+func New(ctrl Ctrl) *Handler {
 	srv := grpc.NewServer()
 	reflection.Register(srv)
 	return &Handler{

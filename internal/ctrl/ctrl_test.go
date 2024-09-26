@@ -3,8 +3,8 @@ package ctrl
 import (
 	"context"
 	"errors"
-	"github.com/JMURv/service-discovery/internal/ctrl/mocks"
 	"github.com/JMURv/service-discovery/internal/repo"
+	"github.com/JMURv/service-discovery/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"testing"

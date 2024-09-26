@@ -1,12 +1,6 @@
 version: 3
 
 tasks:
-
-  mock:
-    desc: Generate mocks
-    cmds:
-      - mockgen -source="ctrl.go" -destination="mocks/mock_repos.go" -package=mocks
-
   t:
     desc: Run app
     cmds:

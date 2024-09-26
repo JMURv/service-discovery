@@ -15,6 +15,18 @@ tasks:
     cmds:
       - "protoc --go_out=. --go-grpc_out=. --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative api/pb/discovery.proto"
 
+  test:
+    desc: Run tests
+    cmds:
+      - "go test ./internal/ctrl"
+      - "go test ./internal/hdl/grpc"
+
+  mocks:
+    desc: Generate mocks
+    cmds:
+      - mockgen -source="./internal/hdl/grpc/grpc.go" -destination="mocks/mock_grpc_ctrl.go" -package=mocks
+      - mockgen -source="./internal/ctrl/ctrl.go" -destination="mocks/mock_repos.go" -package=mocks
+
   build:
     desc: Build app
     cmds:
