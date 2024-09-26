@@ -19,6 +19,7 @@ tasks:
     desc: Run tests
     cmds:
       - "go test ./internal/ctrl"
+      - "go test ./internal/hdl/http"
       - "go test ./internal/hdl/grpc"
 
   mocks:

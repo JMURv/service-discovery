@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/JMURv/service-discovery/internal/ctrl"
+	"github.com/JMURv/service-discovery/internal/hdl/grpc"
 	"github.com/JMURv/service-discovery/internal/validation"
 	md "github.com/JMURv/service-discovery/pkg/model"
 	utils "github.com/JMURv/service-discovery/pkg/utils/http"
@@ -17,10 +18,10 @@ import (
 
 type Handler struct {
 	srv  *http.Server
-	ctrl *ctrl.Controller
+	ctrl grpc.Ctrl
 }
 
-func New(ctrl *ctrl.Controller) *Handler {
+func New(ctrl grpc.Ctrl) *Handler {
 	return &Handler{
 		ctrl: ctrl,
 	}
