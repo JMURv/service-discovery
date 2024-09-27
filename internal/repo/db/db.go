@@ -82,7 +82,7 @@ func (r *Repository) FindServiceByName(ctx context.Context, name string) (string
 	var svcs []md.Service
 
 	if err := r.conn.WithContext(ctx).
-		Where("name = ?", name).
+		Where("name = ? AND is_active = true", name).
 		Find(&svcs).Error; err != nil || len(svcs) == 0 {
 		return "", repo.ErrNotFound
 	}
