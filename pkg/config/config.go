@@ -5,9 +5,25 @@ import (
 	"os"
 )
 
+type DB string
+
+const (
+	InMem  DB = "in-mem"
+	SQLite DB = "sqlite"
+)
+
+type AcceptReq string
+
+const (
+	GRPC AcceptReq = "grpc"
+	HTTP AcceptReq = "http"
+)
+
 type Config struct {
-	ServiceName string        `yaml:"serviceName" env-required:"true"`
-	Server      *ServerConfig `yaml:"server"`
+	DB        DB             `yaml:"db" env-default:"in-mem"`
+	AcceptReq AcceptReq      `yaml:"accept-req" env-default:"grpc"`
+	Server    *ServerConfig  `yaml:"server"`
+	Checker   *CheckerConfig `yaml:"checker"`
 }
 
 type ServerConfig struct {
@@ -15,6 +31,11 @@ type ServerConfig struct {
 	Mode   string `yaml:"mode" env-default:"dev"`
 	Scheme string `yaml:"scheme" env-default:"http"`
 	Domain string `yaml:"domain" env-default:"localhost"`
+}
+
+type CheckerConfig struct {
+	MaxRetriesReq int `yaml:"max_retries_req" env-default:"3"`
+	CooldownReq   int `yaml:"cooldown_req" env-default:"5"`
 }
 
 func MustLoad(configPath string) *Config {

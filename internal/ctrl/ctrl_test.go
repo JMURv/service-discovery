@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/JMURv/service-discovery/internal/repo"
 	"github.com/JMURv/service-discovery/mocks"
+	md "github.com/JMURv/service-discovery/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"testing"
@@ -15,13 +16,21 @@ func TestRegister(t *testing.T) {
 	defer ctrlMock.Finish()
 
 	svcRepo := mocks.NewMockServiceDiscoveryRepo(ctrlMock)
-	ctrl := New(svcRepo)
+
+	newAddrChan := make(chan md.Service)
+	ctrl := New(svcRepo, newAddrChan)
 
 	ctx := context.Background()
 	name := "test-svc"
 	addr := "http://localhost:8080"
 
-	// Test case 1: User exists
+	// Test case 1: No error
+	go func() {
+		for service := range newAddrChan {
+			assert.Equal(t, name, service.Name)
+			assert.Equal(t, addr, service.Address)
+		}
+	}()
 	svcRepo.EXPECT().Register(gomock.Any(), name, addr).Return(nil).Times(1)
 
 	err := ctrl.Register(ctx, name, addr)
@@ -39,6 +48,7 @@ func TestRegister(t *testing.T) {
 
 	err = ctrl.Register(ctx, name, addr)
 	assert.IsType(t, ErrOther, err)
+
 }
 
 func TestDeregister(t *testing.T) {
@@ -46,7 +56,7 @@ func TestDeregister(t *testing.T) {
 	defer ctrlMock.Finish()
 
 	svcRepo := mocks.NewMockServiceDiscoveryRepo(ctrlMock)
-	ctrl := New(svcRepo)
+	ctrl := New(svcRepo, make(chan md.Service))
 
 	ctx := context.Background()
 	name := "test-svc"
@@ -77,7 +87,7 @@ func TestFindServiceByName(t *testing.T) {
 	defer ctrlMock.Finish()
 
 	svcRepo := mocks.NewMockServiceDiscoveryRepo(ctrlMock)
-	ctrl := New(svcRepo)
+	ctrl := New(svcRepo, make(chan md.Service))
 
 	ctx := context.Background()
 	name := "test-svc"
@@ -110,7 +120,7 @@ func TestListServices(t *testing.T) {
 	defer ctrlMock.Finish()
 
 	svcRepo := mocks.NewMockServiceDiscoveryRepo(ctrlMock)
-	ctrl := New(svcRepo)
+	ctrl := New(svcRepo, make(chan md.Service))
 
 	ctx := context.Background()
 	expectedRes := []string{"name1", "name2", "name3"}
@@ -135,7 +145,7 @@ func TestListAddrs(t *testing.T) {
 	defer ctrlMock.Finish()
 
 	svcRepo := mocks.NewMockServiceDiscoveryRepo(ctrlMock)
-	ctrl := New(svcRepo)
+	ctrl := New(svcRepo, make(chan md.Service))
 
 	ctx := context.Background()
 	expectedRes := []string{"http://localhost:8080", "http://localhost:8081", "http://localhost:8082"}

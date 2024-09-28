@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/JMURv/service-discovery/internal/repo"
+	md "github.com/JMURv/service-discovery/pkg/model"
 	"go.uber.org/zap"
 )
 
@@ -13,15 +14,20 @@ type ServiceDiscoveryRepo interface {
 	FindServiceByName(ctx context.Context, name string) (string, error)
 	ListServices(ctx context.Context) ([]string, error)
 	ListAddrs(ctx context.Context, name string) ([]string, error)
+	DeactivateSvc(_ context.Context, name, addr string) error
+	ActivateSvc(ctx context.Context, name, addr string) error
+	Close() error
 }
 
 type Controller struct {
-	repo ServiceDiscoveryRepo
+	repo        ServiceDiscoveryRepo
+	newAddrChan chan md.Service
 }
 
-func New(repo ServiceDiscoveryRepo) *Controller {
+func New(repo ServiceDiscoveryRepo, newAddrChan chan md.Service) *Controller {
 	return &Controller{
-		repo: repo,
+		repo:        repo,
+		newAddrChan: newAddrChan,
 	}
 }
 
@@ -39,6 +45,19 @@ func (c *Controller) Register(ctx context.Context, name, addr string) error {
 			zap.String("name", name), zap.String("address", addr), zap.Error(err),
 		)
 		return err
+	}
+
+	select {
+	case c.newAddrChan <- md.Service{Name: name, Address: addr}:
+		zap.L().Debug(
+			"Sent new address",
+			zap.String("name", name), zap.String("address", addr),
+		)
+	default:
+		zap.L().Warn(
+			"Channel is full, could not send new address",
+			zap.String("name", name), zap.String("address", addr),
+		)
 	}
 
 	zap.L().Debug(

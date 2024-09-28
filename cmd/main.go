@@ -1,14 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	ctrl "github.com/JMURv/service-discovery/internal/ctrl"
-	//handler "github.com/JMURv/service-discovery/internal/handler/http"
-	handler "github.com/JMURv/service-discovery/internal/hdl/grpc"
-	"go.uber.org/zap"
-	//mem "github.com/JMURv/service-discovery/internal/repository/memory"
-	db "github.com/JMURv/service-discovery/internal/repo/db"
+	"github.com/JMURv/service-discovery/internal/checker"
+	"github.com/JMURv/service-discovery/internal/ctrl"
+	"github.com/JMURv/service-discovery/internal/hdl"
+	"github.com/JMURv/service-discovery/internal/hdl/grpc"
+	"github.com/JMURv/service-discovery/internal/hdl/http"
+	sqlite "github.com/JMURv/service-discovery/internal/repo/db"
+	mem "github.com/JMURv/service-discovery/internal/repo/memory"
 	cfg "github.com/JMURv/service-discovery/pkg/config"
+	md "github.com/JMURv/service-discovery/pkg/model"
+	"go.uber.org/zap"
 	"os"
 	"os/signal"
 	"syscall"
@@ -36,10 +40,33 @@ func main() {
 	conf := cfg.MustLoad(configPath)
 	mustRegisterLogger(conf.Server.Mode)
 
+	ctx, cancel := context.WithCancel(context.Background())
+	newAddrChan := make(chan md.Service)
+
 	// Setting up main app
-	repo := db.New()
-	svc := ctrl.New(repo)
-	h := handler.New(svc)
+
+	var repo ctrl.ServiceDiscoveryRepo
+	switch conf.DB {
+	case cfg.InMem:
+		repo = mem.New()
+	case cfg.SQLite:
+		repo = sqlite.New()
+	default:
+		zap.L().Fatal("Unsupported repo type in configuration")
+	}
+
+	check := checker.New(repo, newAddrChan, conf.Checker)
+	svc := ctrl.New(repo, newAddrChan)
+
+	var h hdl.Handler
+	switch conf.AcceptReq {
+	case cfg.HTTP:
+		h = http.New(svc)
+	case cfg.GRPC:
+		h = grpc.New(svc)
+	default:
+		zap.L().Fatal("Unsupported handler type in configuration")
+	}
 
 	// Graceful shutdown
 	go func() {
@@ -48,6 +75,7 @@ func main() {
 		<-c
 
 		zap.L().Info("Shutting down gracefully...")
+		cancel()
 
 		repo.Close()
 		h.Close()
@@ -55,6 +83,7 @@ func main() {
 	}()
 
 	// Start service
+	go check.Start(ctx)
 	zap.L().Info(
 		fmt.Sprintf("Starting server on %v://%v:%v", conf.Server.Scheme, conf.Server.Domain, conf.Server.Port),
 	)

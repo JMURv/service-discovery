@@ -39,6 +39,48 @@ func (m *MockServiceDiscoveryRepo) EXPECT() *MockServiceDiscoveryRepoMockRecorde
 	return m.recorder
 }
 
+// ActivateSvc mocks base method.
+func (m *MockServiceDiscoveryRepo) ActivateSvc(ctx context.Context, name, addr string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ActivateSvc", ctx, name, addr)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ActivateSvc indicates an expected call of ActivateSvc.
+func (mr *MockServiceDiscoveryRepoMockRecorder) ActivateSvc(ctx, name, addr any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ActivateSvc", reflect.TypeOf((*MockServiceDiscoveryRepo)(nil).ActivateSvc), ctx, name, addr)
+}
+
+// Close mocks base method.
+func (m *MockServiceDiscoveryRepo) Close() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockServiceDiscoveryRepoMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockServiceDiscoveryRepo)(nil).Close))
+}
+
+// DeactivateSvc mocks base method.
+func (m *MockServiceDiscoveryRepo) DeactivateSvc(arg0 context.Context, name, addr string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeactivateSvc", arg0, name, addr)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeactivateSvc indicates an expected call of DeactivateSvc.
+func (mr *MockServiceDiscoveryRepoMockRecorder) DeactivateSvc(arg0, name, addr any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateSvc", reflect.TypeOf((*MockServiceDiscoveryRepo)(nil).DeactivateSvc), arg0, name, addr)
+}
+
 // Deregister mocks base method.
 func (m *MockServiceDiscoveryRepo) Deregister(ctx context.Context, name, addr string) error {
 	m.ctrl.T.Helper()

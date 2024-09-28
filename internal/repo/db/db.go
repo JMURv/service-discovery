@@ -12,9 +12,9 @@ import (
 )
 
 type Repository struct {
+	mu      sync.Mutex
 	conn    *gorm.DB
 	rrIndex map[string]int
-	mu      sync.Mutex
 }
 
 func New() *Repository {
@@ -128,4 +128,41 @@ func (r *Repository) ListAddrs(ctx context.Context, name string) ([]string, erro
 	}
 
 	return addrs, nil
+}
+
+func (r *Repository) DeactivateSvc(ctx context.Context, name, addr string) error {
+	var svc md.Service
+
+	if err := r.conn.WithContext(ctx).
+		Where("name = ? AND address = ?", name, addr).
+		First(&svc).Error; err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		return repo.ErrNotFound
+	} else if err != nil {
+		return err
+	}
+
+	svc.IsActive = false
+	if err := r.conn.WithContext(ctx).Save(&svc).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) ActivateSvc(ctx context.Context, name, addr string) error {
+	var svc md.Service
+
+	if err := r.conn.WithContext(ctx).
+		Where("name = ? AND address = ?", name, addr).
+		First(&svc).Error; err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		return repo.ErrNotFound
+	} else if err != nil {
+		return err
+	}
+
+	svc.IsActive = true
+	if err := r.conn.WithContext(ctx).Save(&svc).Error; err != nil {
+		return err
+	}
+	return nil
 }

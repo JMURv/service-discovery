@@ -74,4 +74,59 @@ func TestRepository(t *testing.T) {
 		assert.Equal(t, repo.ErrNotFound, err)
 		assert.Empty(t, addrs)
 	})
+
+	t.Run("Deactivate service", func(t *testing.T) {
+		r.Register(ctx, "service5", "addr7")
+
+		err := r.DeactivateSvc(ctx, "service5", "addr7")
+		assert.NoError(t, err)
+
+		addr, err := r.FindServiceByName(ctx, "service5")
+		assert.Equal(t, repo.ErrNotFound, err)
+		assert.Empty(t, addr)
+
+		err = r.DeactivateSvc(ctx, "non-existing-service", "non-existing-addr")
+		assert.Equal(t, repo.ErrNotFound, err)
+
+		err = r.DeactivateSvc(ctx, "service5", "non-existing-addr")
+		assert.Equal(t, repo.ErrNotFound, err)
+
+		err = r.Register(ctx, "service5", "addr8")
+		assert.NoError(t, err)
+
+		err = r.DeactivateSvc(ctx, "service5", "addr8")
+		assert.NoError(t, err)
+
+		addr, err = r.FindServiceByName(ctx, "service5")
+		assert.Equal(t, repo.ErrNotFound, err)
+	})
+
+	t.Run("Activate service", func(t *testing.T) {
+		r.Register(ctx, "service6", "addr9")
+		err := r.DeactivateSvc(ctx, "service6", "addr9")
+		assert.NoError(t, err)
+
+		addr, err := r.FindServiceByName(ctx, "service6")
+		assert.Equal(t, repo.ErrNotFound, err)
+		assert.Empty(t, addr)
+
+		err = r.ActivateSvc(ctx, "service6", "addr9")
+		assert.NoError(t, err)
+
+		addr, err = r.FindServiceByName(ctx, "service6")
+		assert.NoError(t, err)
+		assert.Equal(t, "addr9", addr)
+
+		err = r.ActivateSvc(ctx, "non-existing-service", "non-existing-addr")
+		assert.Equal(t, repo.ErrNotFound, err)
+
+		err = r.ActivateSvc(ctx, "service6", "non-existing-addr")
+		assert.Equal(t, repo.ErrNotFound, err)
+	})
+
+	t.Run("Close", func(t *testing.T) {
+		err := r.Close()
+		assert.Nil(t, err)
+	})
+
 }

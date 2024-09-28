@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestRegister(t *testing.T) {
@@ -373,4 +374,45 @@ func TestListSvcs(t *testing.T) {
 	w = httptest.NewRecorder()
 	hdl.listSvcs(w, req)
 	assert.Equal(t, http.StatusInternalServerError, w.Result().StatusCode)
+}
+
+func TestStart(t *testing.T) {
+	ctrlMock := gomock.NewController(t)
+	defer ctrlMock.Finish()
+
+	ctrlRepo := mocks.NewMockCtrl(ctrlMock)
+	hdl := New(ctrlRepo)
+
+	go hdl.Start(8080)
+	time.Sleep(500 * time.Millisecond)
+
+	resp, err := http.Get("http://localhost:8080/health-check")
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected status 200 OK, got %v", resp.StatusCode)
+	}
+}
+
+func TestClose(t *testing.T) {
+	ctrlMock := gomock.NewController(t)
+	defer ctrlMock.Finish()
+
+	ctrlRepo := mocks.NewMockCtrl(ctrlMock)
+	hdl := New(ctrlRepo)
+
+	go hdl.Start(8080)
+	time.Sleep(500 * time.Millisecond)
+
+	if err := hdl.Close(); err != nil {
+		t.Fatalf("Expected no error while closing, got %v", err)
+	}
+
+	resp, err := http.Get("http://localhost:8080/health-check")
+	if err == nil {
+		defer resp.Body.Close()
+	}
 }

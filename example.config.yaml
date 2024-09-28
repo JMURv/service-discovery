@@ -1,7 +1,12 @@
-serviceName: "svc-discovery"
+db: "in-mem" # "in-mem" or "sqlite"
+accept-req: "grpc" # "grpc" or "http"
 
 server:
   mode: "dev"
   port: 50030
   scheme: "http"
   domain: "localhost"
+
+checker:
+  max_retries_req: 3 # Max number of retries. If exceeds, service will be deregistered automatically
+  cooldown_req: 5 # In seconds. Cooldown between requests to the same service

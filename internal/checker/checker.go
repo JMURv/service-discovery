@@ -4,31 +4,30 @@ import (
 	"context"
 	"fmt"
 	"github.com/JMURv/service-discovery/internal/ctrl"
+	"github.com/JMURv/service-discovery/pkg/config"
 	md "github.com/JMURv/service-discovery/pkg/model"
 	"go.uber.org/zap"
 	"net/http"
 	"time"
 )
 
-// TODO: To config
-const maxRetriesReq = 3
-const cooldownReq = 5 * time.Second
-
 type Checker struct {
+	conf           *config.CheckerConfig
 	repo           ctrl.ServiceDiscoveryRepo
 	newAddrChan    chan md.Service
 	failedAttempts map[string]map[string]int
 }
 
-func New(repo ctrl.ServiceDiscoveryRepo, newAddr chan md.Service) *Checker {
+func New(repo ctrl.ServiceDiscoveryRepo, newAddr chan md.Service, conf *config.CheckerConfig) *Checker {
 	return &Checker{
 		repo:           repo,
 		newAddrChan:    newAddr,
 		failedAttempts: make(map[string]map[string]int),
+		conf:           conf,
 	}
 }
 
-func (c *Checker) healthCheck(ctx context.Context) {
+func (c *Checker) Start(ctx context.Context) {
 	go c.listenForNewAddresses(ctx)
 
 	names, err := c.repo.ListServices(ctx)
@@ -49,6 +48,7 @@ func (c *Checker) healthCheck(ctx context.Context) {
 		}
 	}
 
+	zap.L().Info("health check started")
 	select {
 	case <-ctx.Done():
 		zap.L().Info("health check stopped")
@@ -84,20 +84,41 @@ func (c *Checker) worker(ctx context.Context, name, addr string) {
 			if err != nil || resp.StatusCode >= 300 {
 				zap.L().Warn(
 					"service health check failed",
-					zap.String("svc", name), zap.String("addr", addr), zap.Int("status", resp.StatusCode),
+					zap.String("svc", name), zap.String("addr", addr),
 				)
 
+				if err := c.repo.DeactivateSvc(ctx, name, addr); err != nil {
+					zap.L().Error(
+						"failed to deactivate service",
+						zap.String("svc", name), zap.String("addr", addr), zap.Error(err),
+					)
+				}
+
 				c.failedAttempts[name][addr]++
-				if c.failedAttempts[name][addr] >= maxRetriesReq {
-					zap.L().Warn("deregistering service due to failed health checks", zap.String("svc", name), zap.String("addr", addr))
+				if c.failedAttempts[name][addr] >= c.conf.MaxRetriesReq {
+					zap.L().Warn(
+						"deregistering service due to failed health checks",
+						zap.String("svc", name), zap.String("addr", addr),
+					)
+
 					if err := c.repo.Deregister(ctx, name, addr); err != nil {
-						zap.L().Error("failed to deregister service", zap.String("svc", name), zap.String("addr", addr), zap.Error(err))
+						zap.L().Error(
+							"failed to deregister service",
+							zap.String("svc", name), zap.String("addr", addr), zap.Error(err),
+						)
 					} else {
 						delete(c.failedAttempts[name], addr)
 					}
-					break
+
+					return
 				}
 			} else {
+				if err := c.repo.ActivateSvc(ctx, name, addr); err != nil {
+					zap.L().Error(
+						"failed to activate service",
+						zap.String("svc", name), zap.String("addr", addr), zap.Error(err),
+					)
+				}
 				delete(c.failedAttempts[name], addr)
 			}
 
@@ -107,7 +128,7 @@ func (c *Checker) worker(ctx context.Context, name, addr string) {
 				}
 			}
 
-			time.Sleep(cooldownReq)
+			time.Sleep(time.Duration(c.conf.CooldownReq) * time.Second)
 		}
 	}
 }
