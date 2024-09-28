@@ -285,7 +285,6 @@ func TestStart(t *testing.T) {
 	defer conn.Close()
 	assert.Nil(t, err)
 
-	if err := hdl.Close(); err != nil {
-		t.Fatalf("expected no error while closing, got %v", err)
-	}
+	err = hdl.Close()
+	assert.Nil(t, err)
 }
