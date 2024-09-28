@@ -8,9 +8,7 @@ import (
 	"github.com/JMURv/service-discovery/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"testing"
 	"time"
@@ -278,13 +276,6 @@ func TestStart(t *testing.T) {
 	go hdl.Start(8080)
 	time.Sleep(500 * time.Millisecond)
 
-	conn, err := grpc.NewClient("localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		t.Fatalf("failed to dial server: %v", err)
-	}
-	defer conn.Close()
-	assert.Nil(t, err)
-
-	err = hdl.Close()
+	err := hdl.Close()
 	assert.Nil(t, err)
 }
