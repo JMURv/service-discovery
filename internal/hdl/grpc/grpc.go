@@ -45,7 +45,9 @@ func (h *Handler) Start(port int) {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	log.Fatal(h.srv.Serve(lis))
+	if err := h.srv.Serve(lis); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }
 
 func (h *Handler) Close() error {
