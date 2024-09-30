@@ -7,7 +7,11 @@ import (
 	"github.com/JMURv/service-discovery/pkg/config"
 	md "github.com/JMURv/service-discovery/pkg/model"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -16,14 +20,16 @@ type Checker struct {
 	repo           ctrl.ServiceDiscoveryRepo
 	newAddrChan    chan md.Service
 	failedAttempts map[string]map[string]int
+	req            config.AcceptReq
 }
 
-func New(repo ctrl.ServiceDiscoveryRepo, newAddr chan md.Service, conf *config.CheckerConfig) *Checker {
+func New(repo ctrl.ServiceDiscoveryRepo, newAddr chan md.Service, conf *config.CheckerConfig, req config.AcceptReq) *Checker {
 	return &Checker{
 		repo:           repo,
 		newAddrChan:    newAddr,
 		failedAttempts: make(map[string]map[string]int),
 		conf:           conf,
+		req:            req,
 	}
 }
 
@@ -73,15 +79,17 @@ func (c *Checker) worker(ctx context.Context, name, addr string) {
 			zap.L().Info("worker stopped", zap.String("svc", name), zap.String("addr", addr))
 			return
 		default:
-			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/health-check", addr), nil)
-			if err != nil {
-				zap.L().Debug("failed to create request", zap.Error(err))
-				return
+			time.Sleep(time.Duration(c.conf.CooldownReq) * time.Second)
+			success := false
+
+			switch c.req {
+			case config.HTTP:
+				success = c.HTTPReq(addr)
+			case config.GRPC:
+				success = c.gRPCReq(name, addr)
 			}
 
-			cli := &http.Client{Timeout: 5 * time.Second}
-			resp, err := cli.Do(req)
-			if err != nil || resp.StatusCode >= 300 {
+			if !success {
 				zap.L().Warn(
 					"service health check failed",
 					zap.String("svc", name), zap.String("addr", addr),
@@ -122,13 +130,62 @@ func (c *Checker) worker(ctx context.Context, name, addr string) {
 				delete(c.failedAttempts[name], addr)
 			}
 
-			if resp != nil {
-				if err := resp.Body.Close(); err != nil {
-					zap.L().Error("failed to close response body", zap.Error(err))
-				}
-			}
-
-			time.Sleep(time.Duration(c.conf.CooldownReq) * time.Second)
 		}
 	}
+}
+
+func (c *Checker) HTTPReq(addr string) bool {
+	success := false
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/health-check", addr), nil)
+	if err != nil {
+		zap.L().Debug("failed to create request", zap.Error(err))
+		return false
+	}
+
+	cli := &http.Client{Timeout: 5 * time.Second}
+	resp, err := cli.Do(req)
+	if resp != nil {
+		if err := resp.Body.Close(); err != nil {
+			zap.L().Error("failed to close response body", zap.Error(err))
+		}
+	}
+	if err == nil && resp.StatusCode == http.StatusOK {
+		success = true
+	}
+
+	return success
+}
+
+func (c *Checker) gRPCReq(name, addr string) bool {
+	success := false
+	addr = strings.TrimPrefix(addr, "http://")
+	addr = strings.TrimPrefix(addr, "https://")
+
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		zap.L().Warn("failed to connect to service", zap.String("svc", name), zap.String("addr", addr), zap.Error(err))
+		return false
+	}
+
+	check, err := grpc_health_v1.NewHealthClient(conn).
+		Check(context.Background(), &grpc_health_v1.HealthCheckRequest{
+			Service: name,
+		})
+	if err != nil {
+		zap.L().Warn("gRPC health check failed", zap.String("svc", name), zap.String("addr", addr), zap.Error(err))
+	} else if check.GetStatus() == grpc_health_v1.HealthCheckResponse_SERVING {
+		success = true
+	} else {
+		zap.L().Warn(
+			"service is not in a serving state",
+			zap.String("svc", name), zap.String("addr", addr),
+			zap.String("status", check.GetStatus().String()),
+		)
+	}
+
+	if err := conn.Close(); err != nil {
+		zap.L().Warn("failed to close connection", zap.String("svc", name), zap.String("addr", addr), zap.Error(err))
+	}
+
+	return success
 }

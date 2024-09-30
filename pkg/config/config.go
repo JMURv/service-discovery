@@ -34,8 +34,9 @@ type ServerConfig struct {
 }
 
 type CheckerConfig struct {
-	MaxRetriesReq int `yaml:"max_retries_req" env-default:"3"`
-	CooldownReq   int `yaml:"cooldown_req" env-default:"5"`
+	Req           AcceptReq `yaml:"req" env-default:"grpc"`
+	MaxRetriesReq int       `yaml:"max_retries_req" env-default:"3"`
+	CooldownReq   int       `yaml:"cooldown_req" env-default:"5"`
 }
 
 func MustLoad(configPath string) *Config {

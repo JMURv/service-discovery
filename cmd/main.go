@@ -55,7 +55,7 @@ func main() {
 		zap.L().Fatal("Unsupported repo type in configuration")
 	}
 
-	check := checker.New(repo, newAddrChan, conf.Checker)
+	check := checker.New(repo, newAddrChan, conf.Checker, conf.Checker.Req)
 	svc := ctrl.New(repo, newAddrChan)
 
 	var h hdl.Handler

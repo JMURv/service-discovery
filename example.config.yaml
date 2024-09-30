@@ -8,5 +8,6 @@ server:
   domain: "localhost"
 
 checker:
+  req: "grpc"
   max_retries_req: 3 # Max number of retries. If exceeds, service will be deregistered automatically
   cooldown_req: 5 # In seconds. Cooldown between requests to the same service

@@ -124,7 +124,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		utils.ErrResponse(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
-		utils.ErrResponse(w, http.StatusInternalServerError, err)
+		utils.ErrResponse(w, http.StatusInternalServerError, ctrl.ErrInternalError)
 		return
 	}
 
