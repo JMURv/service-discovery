@@ -1,6 +1,6 @@
 syntax = "proto3";
 package service_discovery;
-option go_package = "github.com/JMURv/par-pro/api/pb/service-discovery";
+option go_package = "github.com/JMURv/api/pb/service-discovery";
 
 message Empty {}
 
