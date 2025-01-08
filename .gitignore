@@ -3,3 +3,4 @@
 !example.config.yaml
 discovery.db
 cov.out
+**/*~
