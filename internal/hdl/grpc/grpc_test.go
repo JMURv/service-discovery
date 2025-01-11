@@ -25,17 +25,18 @@ func TestRegister(t *testing.T) {
 	ctx := context.Background()
 	name := "test-svc"
 	addr := "http://localhost:8080"
+	svcType := md.SvcType("grpc")
 
 	// Test case 1: Success
-	ctrlRepo.EXPECT().Register(gomock.Any(), name, addr).Return(nil).Times(1)
+	ctrlRepo.EXPECT().Register(gomock.Any(), name, addr, svcType).Return(nil).Times(1)
 
-	_, err := hdl.Register(ctx, &pb.NameAndAddressMsg{Name: name, Address: addr})
+	_, err := hdl.Register(ctx, &pb.RegisterMsg{Name: name, Address: addr, Type: string(svcType)})
 	assert.Nil(t, err)
 
 	// Test case 2: ErrAlreadyExists
-	ctrlRepo.EXPECT().Register(gomock.Any(), name, addr).Return(ctrl.ErrAlreadyExists).Times(1)
+	ctrlRepo.EXPECT().Register(gomock.Any(), name, addr, svcType).Return(ctrl.ErrAlreadyExists).Times(1)
 
-	_, err = hdl.Register(ctx, &pb.NameAndAddressMsg{Name: name, Address: addr})
+	_, err = hdl.Register(ctx, &pb.RegisterMsg{Name: name, Address: addr, Type: string(svcType)})
 	s, ok := status.FromError(err)
 	if !ok {
 		t.Fatalf("expected status error, got %v", err)
@@ -45,9 +46,9 @@ func TestRegister(t *testing.T) {
 
 	// Test case 3: ErrInternalError
 	var ErrOther = errors.New("other error")
-	ctrlRepo.EXPECT().Register(gomock.Any(), name, addr).Return(ErrOther).Times(1)
+	ctrlRepo.EXPECT().Register(gomock.Any(), name, addr, svcType).Return(ErrOther).Times(1)
 
-	_, err = hdl.Register(ctx, &pb.NameAndAddressMsg{Name: name, Address: addr})
+	_, err = hdl.Register(ctx, &pb.RegisterMsg{Name: name, Address: addr, Type: string(svcType)})
 	s, ok = status.FromError(err)
 	if !ok {
 		t.Fatalf("expected status error, got %v", err)
@@ -56,7 +57,7 @@ func TestRegister(t *testing.T) {
 	assert.Equal(t, s.Message(), ctrl.ErrInternalError.Error())
 
 	// Test case 4: ErrDecodeRequest
-	_, err = hdl.Register(ctx, &pb.NameAndAddressMsg{Name: ""})
+	_, err = hdl.Register(ctx, &pb.RegisterMsg{Name: ""})
 	s, ok = status.FromError(err)
 	if !ok {
 		t.Fatalf("expected status error, got %v", err)
@@ -65,7 +66,7 @@ func TestRegister(t *testing.T) {
 	assert.Equal(t, s.Message(), ctrl.ErrDecodeRequest.Error())
 
 	// Test case 5: ErrDecodeRequest
-	_, err = hdl.Register(ctx, &pb.NameAndAddressMsg{Address: ""})
+	_, err = hdl.Register(ctx, &pb.RegisterMsg{Address: ""})
 	s, ok = status.FromError(err)
 	if !ok {
 		t.Fatalf("expected status error, got %v", err)

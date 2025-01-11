@@ -13,13 +13,13 @@ func TestRepository(t *testing.T) {
 
 	t.Run(
 		"Register services", func(t *testing.T) {
-			err := r.Register(ctx, "service1", "addr1")
+			err := r.Register(ctx, "service1", "addr1", "http")
 			assert.NoError(t, err)
 
-			err = r.Register(ctx, "service1", "addr1")
+			err = r.Register(ctx, "service1", "addr1", "http")
 			assert.Equal(t, repo.ErrAlreadyExists, err)
 
-			err = r.Register(ctx, "service1", "addr2")
+			err = r.Register(ctx, "service1", "addr2", "http")
 			assert.NoError(t, err)
 		},
 	)
@@ -45,8 +45,8 @@ func TestRepository(t *testing.T) {
 
 	t.Run(
 		"Find service with round-robin", func(t *testing.T) {
-			r.Register(ctx, "service2", "addr3")
-			r.Register(ctx, "service2", "addr4")
+			r.Register(ctx, "service2", "addr3", "http")
+			r.Register(ctx, "service2", "addr4", "http")
 
 			addr, err := r.FindServiceByName(ctx, "service2")
 			assert.NoError(t, err)
@@ -64,8 +64,8 @@ func TestRepository(t *testing.T) {
 
 	t.Run(
 		"List services", func(t *testing.T) {
-			r.Register(ctx, "service3", "addr5")
-			r.Register(ctx, "service4", "addr6")
+			r.Register(ctx, "service3", "addr5", "http")
+			r.Register(ctx, "service4", "addr6", "http")
 
 			services, err := r.ListServices(ctx)
 			assert.NoError(t, err)
@@ -87,7 +87,7 @@ func TestRepository(t *testing.T) {
 
 	t.Run(
 		"Deactivate service", func(t *testing.T) {
-			r.Register(ctx, "service5", "addr7")
+			r.Register(ctx, "service5", "addr7", "http")
 
 			err := r.DeactivateSvc(ctx, "service5", "addr7")
 			assert.NoError(t, err)
@@ -102,7 +102,7 @@ func TestRepository(t *testing.T) {
 			err = r.DeactivateSvc(ctx, "service5", "non-existing-addr")
 			assert.Equal(t, repo.ErrNotFound, err)
 
-			err = r.Register(ctx, "service5", "addr8")
+			err = r.Register(ctx, "service5", "addr8", "http")
 			assert.NoError(t, err)
 
 			err = r.DeactivateSvc(ctx, "service5", "addr8")
@@ -115,7 +115,7 @@ func TestRepository(t *testing.T) {
 
 	t.Run(
 		"Activate service", func(t *testing.T) {
-			r.Register(ctx, "service6", "addr9")
+			r.Register(ctx, "service6", "addr9", "http")
 			err := r.DeactivateSvc(ctx, "service6", "addr9")
 			assert.NoError(t, err)
 

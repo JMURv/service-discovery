@@ -23,6 +23,7 @@ func TestRegister(t *testing.T) {
 	ctx := context.Background()
 	name := "test-svc"
 	addr := "http://localhost:8080"
+	svcType := md.SvcType("http")
 
 	// Test case 1: No error
 	go func() {
@@ -31,22 +32,22 @@ func TestRegister(t *testing.T) {
 			assert.Equal(t, addr, service.Address)
 		}
 	}()
-	svcRepo.EXPECT().Register(gomock.Any(), name, addr).Return(nil).Times(1)
+	svcRepo.EXPECT().Register(gomock.Any(), name, addr, svcType).Return(nil).Times(1)
 
-	err := ctrl.Register(ctx, name, addr)
+	err := ctrl.Register(ctx, name, addr, svcType)
 	assert.Nil(t, err)
 
 	// Test case 2: ErrAlreadyExists
-	svcRepo.EXPECT().Register(gomock.Any(), name, addr).Return(repo.ErrAlreadyExists).Times(1)
+	svcRepo.EXPECT().Register(gomock.Any(), name, addr, svcType).Return(repo.ErrAlreadyExists).Times(1)
 
-	err = ctrl.Register(ctx, name, addr)
+	err = ctrl.Register(ctx, name, addr, svcType)
 	assert.IsType(t, repo.ErrAlreadyExists, err)
 
 	// Test case 3: Repo error (other than ErrAlreadyExists)
 	var ErrOther = errors.New("other error")
-	svcRepo.EXPECT().Register(gomock.Any(), name, addr).Return(ErrOther).Times(1)
+	svcRepo.EXPECT().Register(gomock.Any(), name, addr, svcType).Return(ErrOther).Times(1)
 
-	err = ctrl.Register(ctx, name, addr)
+	err = ctrl.Register(ctx, name, addr, svcType)
 	assert.IsType(t, ErrOther, err)
 
 }

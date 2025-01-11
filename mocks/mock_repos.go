@@ -158,15 +158,15 @@ func (mr *MockServiceDiscoveryRepoMockRecorder) ListServices(ctx any) *gomock.Ca
 }
 
 // Register mocks base method.
-func (m *MockServiceDiscoveryRepo) Register(ctx context.Context, name, addr string) error {
+func (m *MockServiceDiscoveryRepo) Register(ctx context.Context, name, addr string, svcType model.SvcType) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Register", ctx, name, addr)
+	ret := m.ctrl.Call(m, "Register", ctx, name, addr, svcType)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Register indicates an expected call of Register.
-func (mr *MockServiceDiscoveryRepoMockRecorder) Register(ctx, name, addr any) *gomock.Call {
+func (mr *MockServiceDiscoveryRepoMockRecorder) Register(ctx, name, addr, svcType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockServiceDiscoveryRepo)(nil).Register), ctx, name, addr)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockServiceDiscoveryRepo)(nil).Register), ctx, name, addr, svcType)
 }

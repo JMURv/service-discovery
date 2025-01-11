@@ -26,11 +26,12 @@ func TestRegister(t *testing.T) {
 	ctx := context.Background()
 	name := "test-svc"
 	addr := "http://localhost:8080"
+	svcType := md.SvcType("http")
 
 	// Test case 1: Success
-	ctrlRepo.EXPECT().Register(gomock.Any(), name, addr).Return(nil).Times(1)
+	ctrlRepo.EXPECT().Register(gomock.Any(), name, addr, svcType).Return(nil).Times(1)
 
-	payload, _ := json.Marshal(map[string]string{"name": name, "address": addr})
+	payload, _ := json.Marshal(map[string]string{"name": name, "address": addr, "svc_type": string(svcType)})
 	req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewBuffer(payload))
 	req.Header.Set("Content-Type", "application/json")
 	req = req.WithContext(ctx)
@@ -40,9 +41,9 @@ func TestRegister(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, w.Result().StatusCode)
 
 	// Test case 2: ErrAlreadyExists
-	ctrlRepo.EXPECT().Register(gomock.Any(), name, addr).Return(ctrl.ErrAlreadyExists).Times(1)
+	ctrlRepo.EXPECT().Register(gomock.Any(), name, addr, svcType).Return(ctrl.ErrAlreadyExists).Times(1)
 
-	payload, _ = json.Marshal(map[string]string{"name": name, "address": addr})
+	payload, _ = json.Marshal(map[string]string{"name": name, "address": addr, "svc_type": string(svcType)})
 	req = httptest.NewRequest(http.MethodPost, "/register", bytes.NewBuffer(payload))
 	req.Header.Set("Content-Type", "application/json")
 	req = req.WithContext(ctx)
@@ -53,9 +54,9 @@ func TestRegister(t *testing.T) {
 
 	// Test case 3: ErrInternalError
 	var ErrOther = errors.New("other error")
-	ctrlRepo.EXPECT().Register(gomock.Any(), name, addr).Return(ErrOther).Times(1)
+	ctrlRepo.EXPECT().Register(gomock.Any(), name, addr, svcType).Return(ErrOther).Times(1)
 
-	payload, _ = json.Marshal(map[string]string{"name": name, "address": addr})
+	payload, _ = json.Marshal(map[string]string{"name": name, "address": addr, "svc_type": string(svcType)})
 	req = httptest.NewRequest(http.MethodPost, "/register", bytes.NewBuffer(payload))
 	req.Header.Set("Content-Type", "application/json")
 	req = req.WithContext(ctx)
