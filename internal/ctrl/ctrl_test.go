@@ -123,7 +123,7 @@ func TestListServices(t *testing.T) {
 	ctrl := New(svcRepo, make(chan md.Service))
 
 	ctx := context.Background()
-	expectedRes := []string{"name1", "name2", "name3"}
+	expectedRes := []md.Service{{Name: "1", Address: "1"}, {Name: "2", Address: "2"}, {Name: "3", Address: "3"}}
 
 	// Test case 1: Success
 	svcRepo.EXPECT().ListServices(gomock.Any()).Return(expectedRes, nil).Times(1)
@@ -133,14 +133,14 @@ func TestListServices(t *testing.T) {
 
 	// Test case 2: Repo error
 	var ErrOther = errors.New("other error")
-	svcRepo.EXPECT().ListServices(gomock.Any()).Return([]string{}, ErrOther).Times(1)
+	svcRepo.EXPECT().ListServices(gomock.Any()).Return([]md.Service{}, ErrOther).Times(1)
 
 	res, err = ctrl.ListServices(ctx)
-	assert.Equal(t, []string{}, res)
+	assert.Equal(t, []md.Service(nil), res)
 	assert.IsType(t, ErrOther, err)
 }
 
-func TestListAddrs(t *testing.T) {
+func TestListAddrsByName(t *testing.T) {
 	ctrlMock := gomock.NewController(t)
 	defer ctrlMock.Finish()
 
@@ -152,22 +152,22 @@ func TestListAddrs(t *testing.T) {
 	name := "test-svc"
 
 	// Test case 1: Success
-	svcRepo.EXPECT().ListAddrs(gomock.Any(), name).Return(expectedRes, nil).Times(1)
-	res, err := ctrl.ListAddrs(ctx, name)
+	svcRepo.EXPECT().ListAddrsByName(gomock.Any(), name).Return(expectedRes, nil).Times(1)
+	res, err := ctrl.ListAddrsByName(ctx, name)
 	assert.Equal(t, expectedRes, res)
 
 	// Test case 2: ErrNotFound
-	svcRepo.EXPECT().ListAddrs(gomock.Any(), name).Return([]string{}, repo.ErrNotFound).Times(1)
+	svcRepo.EXPECT().ListAddrsByName(gomock.Any(), name).Return([]string{}, repo.ErrNotFound).Times(1)
 
-	res, err = ctrl.ListAddrs(ctx, name)
+	res, err = ctrl.ListAddrsByName(ctx, name)
 	assert.Equal(t, []string{}, res)
 	assert.IsType(t, repo.ErrNotFound, err)
 
 	// Test case 3: Repo error (other than ErrNotFound)
 	var ErrOther = errors.New("other error")
-	svcRepo.EXPECT().ListAddrs(gomock.Any(), name).Return([]string{}, ErrOther).Times(1)
+	svcRepo.EXPECT().ListAddrsByName(gomock.Any(), name).Return([]string{}, ErrOther).Times(1)
 
-	res, err = ctrl.ListAddrs(ctx, name)
+	res, err = ctrl.ListAddrsByName(ctx, name)
 	assert.Equal(t, []string{}, res)
 	assert.IsType(t, ErrOther, err)
 }

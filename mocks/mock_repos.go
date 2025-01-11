@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	model "github.com/JMURv/service-discovery/pkg/model"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -20,6 +21,7 @@ import (
 type MockServiceDiscoveryRepo struct {
 	ctrl     *gomock.Controller
 	recorder *MockServiceDiscoveryRepoMockRecorder
+	isgomock struct{}
 }
 
 // MockServiceDiscoveryRepoMockRecorder is the mock recorder for MockServiceDiscoveryRepo.
@@ -110,26 +112,41 @@ func (mr *MockServiceDiscoveryRepoMockRecorder) FindServiceByName(ctx, name any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindServiceByName", reflect.TypeOf((*MockServiceDiscoveryRepo)(nil).FindServiceByName), ctx, name)
 }
 
-// ListAddrs mocks base method.
-func (m *MockServiceDiscoveryRepo) ListAddrs(ctx context.Context, name string) ([]string, error) {
+// ListAddrsByName mocks base method.
+func (m *MockServiceDiscoveryRepo) ListAddrsByName(ctx context.Context, name string) ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListAddrs", ctx, name)
+	ret := m.ctrl.Call(m, "ListAddrsByName", ctx, name)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListAddrs indicates an expected call of ListAddrs.
-func (mr *MockServiceDiscoveryRepoMockRecorder) ListAddrs(ctx, name any) *gomock.Call {
+// ListAddrsByName indicates an expected call of ListAddrsByName.
+func (mr *MockServiceDiscoveryRepoMockRecorder) ListAddrsByName(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAddrs", reflect.TypeOf((*MockServiceDiscoveryRepo)(nil).ListAddrs), ctx, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAddrsByName", reflect.TypeOf((*MockServiceDiscoveryRepo)(nil).ListAddrsByName), ctx, name)
+}
+
+// ListNames mocks base method.
+func (m *MockServiceDiscoveryRepo) ListNames(ctx context.Context) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListNames", ctx)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListNames indicates an expected call of ListNames.
+func (mr *MockServiceDiscoveryRepoMockRecorder) ListNames(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNames", reflect.TypeOf((*MockServiceDiscoveryRepo)(nil).ListNames), ctx)
 }
 
 // ListServices mocks base method.
-func (m *MockServiceDiscoveryRepo) ListServices(ctx context.Context) ([]string, error) {
+func (m *MockServiceDiscoveryRepo) ListServices(ctx context.Context) ([]model.Service, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListServices", ctx)
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]model.Service)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

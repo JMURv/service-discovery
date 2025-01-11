@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	model "github.com/JMURv/service-discovery/pkg/model"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -20,6 +21,7 @@ import (
 type MockCtrl struct {
 	ctrl     *gomock.Controller
 	recorder *MockCtrlMockRecorder
+	isgomock struct{}
 }
 
 // MockCtrlMockRecorder is the mock recorder for MockCtrl.
@@ -68,26 +70,41 @@ func (mr *MockCtrlMockRecorder) FindServiceByName(ctx, name any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindServiceByName", reflect.TypeOf((*MockCtrl)(nil).FindServiceByName), ctx, name)
 }
 
-// ListAddrs mocks base method.
-func (m *MockCtrl) ListAddrs(ctx context.Context, name string) ([]string, error) {
+// ListAddrsByName mocks base method.
+func (m *MockCtrl) ListAddrsByName(ctx context.Context, name string) ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListAddrs", ctx, name)
+	ret := m.ctrl.Call(m, "ListAddrsByName", ctx, name)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListAddrs indicates an expected call of ListAddrs.
-func (mr *MockCtrlMockRecorder) ListAddrs(ctx, name any) *gomock.Call {
+// ListAddrsByName indicates an expected call of ListAddrsByName.
+func (mr *MockCtrlMockRecorder) ListAddrsByName(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAddrs", reflect.TypeOf((*MockCtrl)(nil).ListAddrs), ctx, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAddrsByName", reflect.TypeOf((*MockCtrl)(nil).ListAddrsByName), ctx, name)
+}
+
+// ListNames mocks base method.
+func (m *MockCtrl) ListNames(ctx context.Context) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListNames", ctx)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListNames indicates an expected call of ListNames.
+func (mr *MockCtrlMockRecorder) ListNames(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNames", reflect.TypeOf((*MockCtrl)(nil).ListNames), ctx)
 }
 
 // ListServices mocks base method.
-func (m *MockCtrl) ListServices(ctx context.Context) ([]string, error) {
+func (m *MockCtrl) ListServices(ctx context.Context) ([]model.Service, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListServices", ctx)
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]model.Service)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

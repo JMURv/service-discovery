@@ -47,6 +47,68 @@ func (r *Repository) Close() error {
 	return nil
 }
 
+func (r *Repository) ListNames(ctx context.Context) ([]string, error) {
+	var svcs []md.Service
+	if err := r.conn.WithContext(ctx).
+		Find(&svcs).Error; err != nil {
+		return nil, err
+	}
+
+	names := make([]string, len(svcs))
+	for i := 0; i < len(svcs); i++ {
+		names[i] = svcs[i].Name
+	}
+
+	return names, nil
+}
+
+func (r *Repository) ListServices(ctx context.Context) ([]md.Service, error) {
+	var svcs []md.Service
+	if err := r.conn.WithContext(ctx).
+		Find(&svcs).Error; err != nil {
+		return nil, err
+	}
+
+	return svcs, nil
+}
+
+func (r *Repository) ListAddrsByName(ctx context.Context, name string) ([]string, error) {
+	var svcs []md.Service
+	if err := r.conn.WithContext(ctx).
+		Where("name = ?", name).
+		Find(&svcs).Error; err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, repo.ErrNotFound
+	} else if err != nil {
+		return nil, err
+	}
+
+	addrs := make([]string, len(svcs))
+	for i, svc := range svcs {
+		addrs[i] = svc.Address
+	}
+
+	return addrs, nil
+}
+
+func (r *Repository) FindServiceByName(ctx context.Context, name string) (string, error) {
+	var svcs []md.Service
+
+	if err := r.conn.WithContext(ctx).
+		Where("name = ? AND is_active = true", name).
+		Find(&svcs).Error; err != nil || len(svcs) == 0 {
+		return "", repo.ErrNotFound
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	currentIndex := r.rrIndex[name]
+	selectedAddr := svcs[currentIndex].Address
+
+	r.rrIndex[name] = (currentIndex + 1) % len(svcs)
+	return selectedAddr, nil
+}
+
 func (r *Repository) Register(ctx context.Context, name, addr string) error {
 	var svc md.Service
 
@@ -78,56 +140,22 @@ func (r *Repository) Deregister(ctx context.Context, name, addr string) error {
 	return nil
 }
 
-func (r *Repository) FindServiceByName(ctx context.Context, name string) (string, error) {
-	var svcs []md.Service
+func (r *Repository) ActivateSvc(ctx context.Context, name, addr string) error {
+	var svc md.Service
 
 	if err := r.conn.WithContext(ctx).
-		Where("name = ? AND is_active = true", name).
-		Find(&svcs).Error; err != nil || len(svcs) == 0 {
-		return "", repo.ErrNotFound
-	}
-
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	currentIndex := r.rrIndex[name]
-	selectedAddr := svcs[currentIndex].Address
-
-	r.rrIndex[name] = (currentIndex + 1) % len(svcs)
-	return selectedAddr, nil
-}
-
-func (r *Repository) ListServices(ctx context.Context) ([]string, error) {
-	var svcs []md.Service
-	if err := r.conn.WithContext(ctx).
-		Find(&svcs).Error; err != nil {
-		return nil, err
-	}
-
-	names := make([]string, len(svcs))
-	for i, svc := range svcs {
-		names[i] = svc.Name
-	}
-
-	return names, nil
-}
-
-func (r *Repository) ListAddrs(ctx context.Context, name string) ([]string, error) {
-	var svcs []md.Service
-	if err := r.conn.WithContext(ctx).
-		Where("name = ?", name).
-		Find(&svcs).Error; err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, repo.ErrNotFound
+		Where("name = ? AND address = ?", name, addr).
+		First(&svc).Error; err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		return repo.ErrNotFound
 	} else if err != nil {
-		return nil, err
+		return err
 	}
 
-	addrs := make([]string, len(svcs))
-	for i, svc := range svcs {
-		addrs[i] = svc.Address
+	svc.IsActive = true
+	if err := r.conn.WithContext(ctx).Save(&svc).Error; err != nil {
+		return err
 	}
-
-	return addrs, nil
+	return nil
 }
 
 func (r *Repository) DeactivateSvc(ctx context.Context, name, addr string) error {
@@ -146,23 +174,5 @@ func (r *Repository) DeactivateSvc(ctx context.Context, name, addr string) error
 		return err
 	}
 
-	return nil
-}
-
-func (r *Repository) ActivateSvc(ctx context.Context, name, addr string) error {
-	var svc md.Service
-
-	if err := r.conn.WithContext(ctx).
-		Where("name = ? AND address = ?", name, addr).
-		First(&svc).Error; err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-		return repo.ErrNotFound
-	} else if err != nil {
-		return err
-	}
-
-	svc.IsActive = true
-	if err := r.conn.WithContext(ctx).Save(&svc).Error; err != nil {
-		return err
-	}
 	return nil
 }

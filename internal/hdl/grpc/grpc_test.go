@@ -6,6 +6,7 @@ import (
 	pb "github.com/JMURv/service-discovery/api/pb"
 	"github.com/JMURv/service-discovery/internal/ctrl"
 	"github.com/JMURv/service-discovery/mocks"
+	md "github.com/JMURv/service-discovery/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
@@ -146,13 +147,13 @@ func TestFindService(t *testing.T) {
 	// Test case 1: Success
 	ctrlRepo.EXPECT().FindServiceByName(gomock.Any(), name).Return(addr, nil).Times(1)
 
-	_, err := hdl.FindService(ctx, &pb.ServiceNameMsg{Name: name})
+	_, err := hdl.FindServiceByName(ctx, &pb.ServiceNameMsg{Name: name})
 	assert.Nil(t, err)
 
 	// Test case 2: ErrNotFound
 	ctrlRepo.EXPECT().FindServiceByName(gomock.Any(), name).Return("", ctrl.ErrNotFound).Times(1)
 
-	_, err = hdl.FindService(ctx, &pb.ServiceNameMsg{Name: name})
+	_, err = hdl.FindServiceByName(ctx, &pb.ServiceNameMsg{Name: name})
 	s, ok := status.FromError(err)
 	if !ok {
 		t.Fatalf("expected status error, got %v", err)
@@ -164,7 +165,7 @@ func TestFindService(t *testing.T) {
 	var ErrOther = errors.New("other error")
 	ctrlRepo.EXPECT().FindServiceByName(gomock.Any(), name).Return("", ErrOther).Times(1)
 
-	_, err = hdl.FindService(ctx, &pb.ServiceNameMsg{Name: name})
+	_, err = hdl.FindServiceByName(ctx, &pb.ServiceNameMsg{Name: name})
 	s, ok = status.FromError(err)
 	if !ok {
 		t.Fatalf("expected status error, got %v", err)
@@ -173,7 +174,7 @@ func TestFindService(t *testing.T) {
 	assert.Equal(t, s.Message(), ctrl.ErrInternalError.Error())
 
 	// Test case 4: ErrDecodeRequest - missing name
-	_, err = hdl.FindService(ctx, &pb.ServiceNameMsg{Name: ""})
+	_, err = hdl.FindServiceByName(ctx, &pb.ServiceNameMsg{Name: ""})
 	s, ok = status.FromError(err)
 	if !ok {
 		t.Fatalf("expected status error, got %v", err)
@@ -190,19 +191,17 @@ func TestListServices(t *testing.T) {
 	hdl := New(ctrlRepo)
 
 	ctx := context.Background()
-	names := []string{"name-1", "name-1"}
-	expectedRes := &pb.ListNamesMsg{Name: names}
+	expRes := []md.Service{{Name: "1", Address: "1"}, {Name: "2", Address: "2"}}
 
 	// Test case 1: Success
-	ctrlRepo.EXPECT().ListServices(gomock.Any()).Return(names, nil).Times(1)
+	ctrlRepo.EXPECT().ListServices(gomock.Any()).Return(expRes, nil).Times(1)
 
-	res, err := hdl.ListServices(ctx, &pb.Empty{})
+	_, err := hdl.ListServices(ctx, &pb.Empty{})
 	assert.Nil(t, err)
-	assert.Equal(t, expectedRes, res)
 
 	// Test case 2: ErrInternalError
 	var ErrOther = errors.New("other error")
-	ctrlRepo.EXPECT().ListServices(gomock.Any()).Return([]string{}, ErrOther).Times(1)
+	ctrlRepo.EXPECT().ListServices(gomock.Any()).Return([]md.Service{}, ErrOther).Times(1)
 
 	_, err = hdl.ListServices(ctx, &pb.Empty{})
 	s, ok := status.FromError(err)
@@ -214,7 +213,7 @@ func TestListServices(t *testing.T) {
 
 }
 
-func TestListAddrs(t *testing.T) {
+func TestListAddrsByName(t *testing.T) {
 	ctrlMock := gomock.NewController(t)
 	defer ctrlMock.Finish()
 
@@ -227,16 +226,16 @@ func TestListAddrs(t *testing.T) {
 	expectedRes := &pb.ListAddrsMsg{Address: addrs}
 
 	// Test case 1: Success
-	ctrlRepo.EXPECT().ListAddrs(gomock.Any(), name).Return(addrs, nil).Times(1)
+	ctrlRepo.EXPECT().ListAddrsByName(gomock.Any(), name).Return(addrs, nil).Times(1)
 
-	res, err := hdl.ListAddrs(ctx, &pb.ServiceNameMsg{Name: name})
+	res, err := hdl.ListAddrsByName(ctx, &pb.ServiceNameMsg{Name: name})
 	assert.Nil(t, err)
 	assert.Equal(t, expectedRes, res)
 
 	// Test case 2: ErrNotFound
-	ctrlRepo.EXPECT().ListAddrs(gomock.Any(), name).Return([]string{}, ctrl.ErrNotFound).Times(1)
+	ctrlRepo.EXPECT().ListAddrsByName(gomock.Any(), name).Return([]string{}, ctrl.ErrNotFound).Times(1)
 
-	_, err = hdl.ListAddrs(ctx, &pb.ServiceNameMsg{Name: name})
+	_, err = hdl.ListAddrsByName(ctx, &pb.ServiceNameMsg{Name: name})
 	s, ok := status.FromError(err)
 	if !ok {
 		t.Fatalf("expected status error, got %v", err)
@@ -246,9 +245,9 @@ func TestListAddrs(t *testing.T) {
 
 	// Test case 3: ErrInternalError
 	var ErrOther = errors.New("other error")
-	ctrlRepo.EXPECT().ListAddrs(gomock.Any(), name).Return([]string{}, ErrOther).Times(1)
+	ctrlRepo.EXPECT().ListAddrsByName(gomock.Any(), name).Return([]string{}, ErrOther).Times(1)
 
-	_, err = hdl.ListAddrs(ctx, &pb.ServiceNameMsg{Name: name})
+	_, err = hdl.ListAddrsByName(ctx, &pb.ServiceNameMsg{Name: name})
 	s, ok = status.FromError(err)
 	if !ok {
 		t.Fatalf("expected status error, got %v", err)
@@ -257,7 +256,7 @@ func TestListAddrs(t *testing.T) {
 	assert.Equal(t, s.Message(), ctrl.ErrInternalError.Error())
 
 	// Test case 4: ErrDecodeRequest - missing name
-	_, err = hdl.ListAddrs(ctx, &pb.ServiceNameMsg{Name: ""})
+	_, err = hdl.ListAddrsByName(ctx, &pb.ServiceNameMsg{Name: ""})
 	s, ok = status.FromError(err)
 	if !ok {
 		t.Fatalf("expected status error, got %v", err)

@@ -29,6 +29,80 @@ func (r *Repository) Close() error {
 	return nil
 }
 
+func (r *Repository) ListNames(_ context.Context) ([]string, error) {
+	r.RLock()
+	defer r.RUnlock()
+
+	names := make([]string, 0, len(r.services))
+	for _, svc := range r.services {
+		if svc.IsActive {
+			names = append(names, svc.Name)
+		}
+	}
+
+	if len(names) == 0 {
+		return []string{}, repo.ErrNotFound
+	}
+
+	return names, nil
+}
+
+func (r *Repository) ListAddrsByName(_ context.Context, name string) ([]string, error) {
+	r.RLock()
+	defer r.RUnlock()
+
+	var addrs []string
+	for _, svc := range r.services {
+		if svc.Name == name && svc.IsActive {
+			addrs = append(addrs, svc.Address)
+		}
+	}
+
+	if len(addrs) == 0 {
+		return []string{}, repo.ErrNotFound
+	}
+
+	return addrs, nil
+}
+
+func (r *Repository) ListServices(_ context.Context) ([]md.Service, error) {
+	r.RLock()
+	defer r.RUnlock()
+
+	res := make([]md.Service, 0, len(r.services))
+	for _, svc := range r.services {
+		res = append(res, svc)
+	}
+
+	if len(res) == 0 {
+		return []md.Service{}, repo.ErrNotFound
+	}
+
+	return res, nil
+}
+
+func (r *Repository) FindServiceByName(_ context.Context, name string) (string, error) {
+	r.RLock()
+	defer r.RUnlock()
+
+	var availableServices []md.Service
+	for _, svc := range r.services {
+		if svc.Name == name && svc.IsActive {
+			availableServices = append(availableServices, svc)
+		}
+	}
+
+	if len(availableServices) == 0 {
+		return "", repo.ErrNotFound
+	}
+
+	currentIndex := r.rrIndex[name]
+	selectedSvc := availableServices[currentIndex]
+
+	r.rrIndex[name] = (currentIndex + 1) % len(availableServices)
+	return selectedSvc.Address, nil
+}
+
 func (r *Repository) Register(_ context.Context, name, addr string) error {
 	r.Lock()
 	defer r.Unlock()
@@ -56,63 +130,6 @@ func (r *Repository) Deregister(_ context.Context, name, addr string) error {
 	}
 
 	return repo.ErrNotFound
-}
-
-func (r *Repository) FindServiceByName(_ context.Context, name string) (string, error) {
-	r.RLock()
-	defer r.RUnlock()
-
-	var availableServices []md.Service
-	for _, svc := range r.services {
-		if svc.Name == name && svc.IsActive {
-			availableServices = append(availableServices, svc)
-		}
-	}
-
-	if len(availableServices) == 0 {
-		return "", repo.ErrNotFound
-	}
-
-	currentIndex := r.rrIndex[name]
-	selectedSvc := availableServices[currentIndex]
-
-	r.rrIndex[name] = (currentIndex + 1) % len(availableServices)
-	return selectedSvc.Address, nil
-}
-
-func (r *Repository) ListServices(_ context.Context) ([]string, error) {
-	r.RLock()
-	defer r.RUnlock()
-
-	namesMap := make(map[string]struct{})
-	for _, svc := range r.services {
-		namesMap[svc.Name] = struct{}{}
-	}
-
-	names := make([]string, 0, len(namesMap))
-	for name := range namesMap {
-		names = append(names, name)
-	}
-
-	return names, nil
-}
-
-func (r *Repository) ListAddrs(_ context.Context, name string) ([]string, error) {
-	r.RLock()
-	defer r.RUnlock()
-
-	var addrs []string
-	for _, svc := range r.services {
-		if svc.Name == name && svc.IsActive {
-			addrs = append(addrs, svc.Address)
-		}
-	}
-
-	if len(addrs) == 0 {
-		return []string{}, repo.ErrNotFound
-	}
-
-	return addrs, nil
 }
 
 func (r *Repository) DeactivateSvc(_ context.Context, name, addr string) error {

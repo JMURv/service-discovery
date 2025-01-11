@@ -36,22 +36,14 @@ func New(repo ctrl.ServiceDiscoveryRepo, newAddr chan md.Service, conf *config.C
 func (c *Checker) Start(ctx context.Context) {
 	go c.listenForNewAddresses(ctx)
 
-	names, err := c.repo.ListServices(ctx)
+	svcs, err := c.repo.ListServices(ctx)
 	if err != nil {
 		zap.L().Debug("failed to list services", zap.Error(err))
 		return
 	}
 
-	for _, name := range names {
-		addrs, err := c.repo.ListAddrs(ctx, name)
-		if err != nil {
-			zap.L().Debug("failed to list addrs", zap.Error(err))
-			continue
-		}
-
-		for _, addr := range addrs {
-			go c.worker(ctx, name, addr)
-		}
+	for i := 0; i < len(svcs); i++ {
+		go c.worker(ctx, svcs[i].Name, svcs[i].Address)
 	}
 
 	zap.L().Info("health check started")
@@ -80,23 +72,25 @@ func (c *Checker) worker(ctx context.Context, name, addr string) {
 			return
 		default:
 			time.Sleep(time.Duration(c.conf.CooldownReq) * time.Second)
-			success := false
+			var err error
 
 			switch c.req {
 			case config.HTTP:
-				success = c.HTTPReq(addr)
+				err = c.HTTPReq(name, addr)
 			case config.GRPC:
-				success = c.gRPCReq(name, addr)
+				err = c.gRPCReq(name, addr)
 			}
 
-			if !success {
-				zap.L().Warn(
-					"service health check failed",
-					zap.String("svc", name), zap.String("addr", addr),
+			if err != nil {
+				zap.L().Debug(
+					ErrCheckService.Error(),
+					zap.String("svc", name),
+					zap.String("addr", addr),
+					zap.Error(err),
 				)
 
-				if err := c.repo.DeactivateSvc(ctx, name, addr); err != nil {
-					zap.L().Error(
+				if err = c.repo.DeactivateSvc(ctx, name, addr); err != nil {
+					zap.L().Debug(
 						"failed to deactivate service",
 						zap.String("svc", name), zap.String("addr", addr), zap.Error(err),
 					)
@@ -104,25 +98,24 @@ func (c *Checker) worker(ctx context.Context, name, addr string) {
 
 				c.failedAttempts[name][addr]++
 				if c.failedAttempts[name][addr] >= c.conf.MaxRetriesReq {
-					zap.L().Warn(
-						"deregistering service due to failed health checks",
+					zap.L().Info(
+						"deregistering due to failed health checks...",
 						zap.String("svc", name), zap.String("addr", addr),
 					)
 
-					if err := c.repo.Deregister(ctx, name, addr); err != nil {
-						zap.L().Error(
+					if err = c.repo.Deregister(ctx, name, addr); err != nil {
+						zap.L().Debug(
 							"failed to deregister service",
 							zap.String("svc", name), zap.String("addr", addr), zap.Error(err),
 						)
 					} else {
 						delete(c.failedAttempts[name], addr)
 					}
-
 					return
 				}
 			} else {
-				if err := c.repo.ActivateSvc(ctx, name, addr); err != nil {
-					zap.L().Error(
+				if err = c.repo.ActivateSvc(ctx, name, addr); err != nil {
+					zap.L().Debug(
 						"failed to activate service",
 						zap.String("svc", name), zap.String("addr", addr), zap.Error(err),
 					)
@@ -134,58 +127,69 @@ func (c *Checker) worker(ctx context.Context, name, addr string) {
 	}
 }
 
-func (c *Checker) HTTPReq(addr string) bool {
-	success := false
+func (c *Checker) HTTPReq(name, addr string) error {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/health-check", addr), nil)
 	if err != nil {
 		zap.L().Debug("failed to create request", zap.Error(err))
-		return false
+		return err
 	}
 
 	cli := &http.Client{Timeout: 5 * time.Second}
 	resp, err := cli.Do(req)
-	if resp != nil {
-		if err := resp.Body.Close(); err != nil {
-			zap.L().Error("failed to close response body", zap.Error(err))
-		}
-	}
-	if err == nil && resp.StatusCode == http.StatusOK {
-		success = true
+	if err != nil {
+		return err
 	}
 
-	return success
+	defer func() {
+		if err = resp.Body.Close(); err != nil {
+			zap.L().Error(
+				"failed to close response body",
+				zap.String("svc", name),
+				zap.String("addr", addr),
+				zap.Error(err),
+			)
+		}
+	}()
+
+	if resp.StatusCode == http.StatusOK {
+		return nil
+	} else {
+		return &ErrUnexpectedStatusCode{resp.StatusCode}
+	}
 }
 
-func (c *Checker) gRPCReq(name, addr string) bool {
-	success := false
+func (c *Checker) gRPCReq(name, addr string) error {
 	addr = strings.TrimPrefix(addr, "http://")
 	addr = strings.TrimPrefix(addr, "https://")
 
 	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		zap.L().Warn("failed to connect to service", zap.String("svc", name), zap.String("addr", addr), zap.Error(err))
-		return false
+		return err
 	}
+	defer func() {
+		if err = conn.Close(); err != nil {
+			zap.L().Error(
+				"failed to close connection",
+				zap.String("svc", name),
+				zap.String("addr", addr),
+				zap.Error(err),
+			)
+		}
+	}()
 
 	check, err := grpc_health_v1.NewHealthClient(conn).
-		Check(context.Background(), &grpc_health_v1.HealthCheckRequest{
-			Service: name,
-		})
-	if err != nil {
-		zap.L().Warn("gRPC health check failed", zap.String("svc", name), zap.String("addr", addr), zap.Error(err))
-	} else if check.GetStatus() == grpc_health_v1.HealthCheckResponse_SERVING {
-		success = true
-	} else {
-		zap.L().Warn(
-			"service is not in a serving state",
-			zap.String("svc", name), zap.String("addr", addr),
-			zap.String("status", check.GetStatus().String()),
+		Check(
+			context.Background(), &grpc_health_v1.HealthCheckRequest{
+				Service: name,
+			},
 		)
+	if err != nil {
+		return err
 	}
 
-	if err := conn.Close(); err != nil {
-		zap.L().Warn("failed to close connection", zap.String("svc", name), zap.String("addr", addr), zap.Error(err))
+	if check.GetStatus() != grpc_health_v1.HealthCheckResponse_SERVING {
+		return ErrNotServing
+	} else {
+		return nil
 	}
-
-	return success
 }

@@ -19,22 +19,24 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ServiceDiscovery_Register_FullMethodName     = "/service_discovery.ServiceDiscovery/Register"
-	ServiceDiscovery_Deregister_FullMethodName   = "/service_discovery.ServiceDiscovery/Deregister"
-	ServiceDiscovery_FindService_FullMethodName  = "/service_discovery.ServiceDiscovery/FindService"
-	ServiceDiscovery_ListServices_FullMethodName = "/service_discovery.ServiceDiscovery/ListServices"
-	ServiceDiscovery_ListAddrs_FullMethodName    = "/service_discovery.ServiceDiscovery/ListAddrs"
+	ServiceDiscovery_ListNames_FullMethodName         = "/service_discovery.ServiceDiscovery/ListNames"
+	ServiceDiscovery_ListAddrsByName_FullMethodName   = "/service_discovery.ServiceDiscovery/ListAddrsByName"
+	ServiceDiscovery_ListServices_FullMethodName      = "/service_discovery.ServiceDiscovery/ListServices"
+	ServiceDiscovery_FindServiceByName_FullMethodName = "/service_discovery.ServiceDiscovery/FindServiceByName"
+	ServiceDiscovery_Register_FullMethodName          = "/service_discovery.ServiceDiscovery/Register"
+	ServiceDiscovery_Deregister_FullMethodName        = "/service_discovery.ServiceDiscovery/Deregister"
 )
 
 // ServiceDiscoveryClient is the client API for ServiceDiscovery service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ServiceDiscoveryClient interface {
+	ListNames(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ListNamesMsg, error)
+	ListAddrsByName(ctx context.Context, in *ServiceNameMsg, opts ...grpc.CallOption) (*ListAddrsMsg, error)
+	ListServices(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ListServiceMsg, error)
+	FindServiceByName(ctx context.Context, in *ServiceNameMsg, opts ...grpc.CallOption) (*ServiceAddressMsg, error)
 	Register(ctx context.Context, in *NameAndAddressMsg, opts ...grpc.CallOption) (*Empty, error)
 	Deregister(ctx context.Context, in *NameAndAddressMsg, opts ...grpc.CallOption) (*Empty, error)
-	FindService(ctx context.Context, in *ServiceNameMsg, opts ...grpc.CallOption) (*ServiceAddressMsg, error)
-	ListServices(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ListNamesMsg, error)
-	ListAddrs(ctx context.Context, in *ServiceNameMsg, opts ...grpc.CallOption) (*ListAddrsMsg, error)
 }
 
 type serviceDiscoveryClient struct {
@@ -43,6 +45,46 @@ type serviceDiscoveryClient struct {
 
 func NewServiceDiscoveryClient(cc grpc.ClientConnInterface) ServiceDiscoveryClient {
 	return &serviceDiscoveryClient{cc}
+}
+
+func (c *serviceDiscoveryClient) ListNames(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ListNamesMsg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListNamesMsg)
+	err := c.cc.Invoke(ctx, ServiceDiscovery_ListNames_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceDiscoveryClient) ListAddrsByName(ctx context.Context, in *ServiceNameMsg, opts ...grpc.CallOption) (*ListAddrsMsg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAddrsMsg)
+	err := c.cc.Invoke(ctx, ServiceDiscovery_ListAddrsByName_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceDiscoveryClient) ListServices(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ListServiceMsg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListServiceMsg)
+	err := c.cc.Invoke(ctx, ServiceDiscovery_ListServices_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceDiscoveryClient) FindServiceByName(ctx context.Context, in *ServiceNameMsg, opts ...grpc.CallOption) (*ServiceAddressMsg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ServiceAddressMsg)
+	err := c.cc.Invoke(ctx, ServiceDiscovery_FindServiceByName_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *serviceDiscoveryClient) Register(ctx context.Context, in *NameAndAddressMsg, opts ...grpc.CallOption) (*Empty, error) {
@@ -65,45 +107,16 @@ func (c *serviceDiscoveryClient) Deregister(ctx context.Context, in *NameAndAddr
 	return out, nil
 }
 
-func (c *serviceDiscoveryClient) FindService(ctx context.Context, in *ServiceNameMsg, opts ...grpc.CallOption) (*ServiceAddressMsg, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ServiceAddressMsg)
-	err := c.cc.Invoke(ctx, ServiceDiscovery_FindService_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *serviceDiscoveryClient) ListServices(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ListNamesMsg, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListNamesMsg)
-	err := c.cc.Invoke(ctx, ServiceDiscovery_ListServices_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *serviceDiscoveryClient) ListAddrs(ctx context.Context, in *ServiceNameMsg, opts ...grpc.CallOption) (*ListAddrsMsg, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListAddrsMsg)
-	err := c.cc.Invoke(ctx, ServiceDiscovery_ListAddrs_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ServiceDiscoveryServer is the server API for ServiceDiscovery service.
 // All implementations must embed UnimplementedServiceDiscoveryServer
 // for forward compatibility.
 type ServiceDiscoveryServer interface {
+	ListNames(context.Context, *Empty) (*ListNamesMsg, error)
+	ListAddrsByName(context.Context, *ServiceNameMsg) (*ListAddrsMsg, error)
+	ListServices(context.Context, *Empty) (*ListServiceMsg, error)
+	FindServiceByName(context.Context, *ServiceNameMsg) (*ServiceAddressMsg, error)
 	Register(context.Context, *NameAndAddressMsg) (*Empty, error)
 	Deregister(context.Context, *NameAndAddressMsg) (*Empty, error)
-	FindService(context.Context, *ServiceNameMsg) (*ServiceAddressMsg, error)
-	ListServices(context.Context, *Empty) (*ListNamesMsg, error)
-	ListAddrs(context.Context, *ServiceNameMsg) (*ListAddrsMsg, error)
 	mustEmbedUnimplementedServiceDiscoveryServer()
 }
 
@@ -114,20 +127,23 @@ type ServiceDiscoveryServer interface {
 // pointer dereference when methods are called.
 type UnimplementedServiceDiscoveryServer struct{}
 
+func (UnimplementedServiceDiscoveryServer) ListNames(context.Context, *Empty) (*ListNamesMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListNames not implemented")
+}
+func (UnimplementedServiceDiscoveryServer) ListAddrsByName(context.Context, *ServiceNameMsg) (*ListAddrsMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAddrsByName not implemented")
+}
+func (UnimplementedServiceDiscoveryServer) ListServices(context.Context, *Empty) (*ListServiceMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListServices not implemented")
+}
+func (UnimplementedServiceDiscoveryServer) FindServiceByName(context.Context, *ServiceNameMsg) (*ServiceAddressMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FindServiceByName not implemented")
+}
 func (UnimplementedServiceDiscoveryServer) Register(context.Context, *NameAndAddressMsg) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
 }
 func (UnimplementedServiceDiscoveryServer) Deregister(context.Context, *NameAndAddressMsg) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Deregister not implemented")
-}
-func (UnimplementedServiceDiscoveryServer) FindService(context.Context, *ServiceNameMsg) (*ServiceAddressMsg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FindService not implemented")
-}
-func (UnimplementedServiceDiscoveryServer) ListServices(context.Context, *Empty) (*ListNamesMsg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListServices not implemented")
-}
-func (UnimplementedServiceDiscoveryServer) ListAddrs(context.Context, *ServiceNameMsg) (*ListAddrsMsg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListAddrs not implemented")
 }
 func (UnimplementedServiceDiscoveryServer) mustEmbedUnimplementedServiceDiscoveryServer() {}
 func (UnimplementedServiceDiscoveryServer) testEmbeddedByValue()                          {}
@@ -148,6 +164,78 @@ func RegisterServiceDiscoveryServer(s grpc.ServiceRegistrar, srv ServiceDiscover
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&ServiceDiscovery_ServiceDesc, srv)
+}
+
+func _ServiceDiscovery_ListNames_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceDiscoveryServer).ListNames(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceDiscovery_ListNames_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceDiscoveryServer).ListNames(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceDiscovery_ListAddrsByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceNameMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceDiscoveryServer).ListAddrsByName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceDiscovery_ListAddrsByName_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceDiscoveryServer).ListAddrsByName(ctx, req.(*ServiceNameMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceDiscovery_ListServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceDiscoveryServer).ListServices(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceDiscovery_ListServices_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceDiscoveryServer).ListServices(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceDiscovery_FindServiceByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceNameMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceDiscoveryServer).FindServiceByName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceDiscovery_FindServiceByName_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceDiscoveryServer).FindServiceByName(ctx, req.(*ServiceNameMsg))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _ServiceDiscovery_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -186,60 +274,6 @@ func _ServiceDiscovery_Deregister_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ServiceDiscovery_FindService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ServiceNameMsg)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ServiceDiscoveryServer).FindService(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ServiceDiscovery_FindService_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServiceDiscoveryServer).FindService(ctx, req.(*ServiceNameMsg))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ServiceDiscovery_ListServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ServiceDiscoveryServer).ListServices(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ServiceDiscovery_ListServices_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServiceDiscoveryServer).ListServices(ctx, req.(*Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ServiceDiscovery_ListAddrs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ServiceNameMsg)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ServiceDiscoveryServer).ListAddrs(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ServiceDiscovery_ListAddrs_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServiceDiscoveryServer).ListAddrs(ctx, req.(*ServiceNameMsg))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // ServiceDiscovery_ServiceDesc is the grpc.ServiceDesc for ServiceDiscovery service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -248,24 +282,28 @@ var ServiceDiscovery_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ServiceDiscoveryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Register",
-			Handler:    _ServiceDiscovery_Register_Handler,
+			MethodName: "ListNames",
+			Handler:    _ServiceDiscovery_ListNames_Handler,
 		},
 		{
-			MethodName: "Deregister",
-			Handler:    _ServiceDiscovery_Deregister_Handler,
-		},
-		{
-			MethodName: "FindService",
-			Handler:    _ServiceDiscovery_FindService_Handler,
+			MethodName: "ListAddrsByName",
+			Handler:    _ServiceDiscovery_ListAddrsByName_Handler,
 		},
 		{
 			MethodName: "ListServices",
 			Handler:    _ServiceDiscovery_ListServices_Handler,
 		},
 		{
-			MethodName: "ListAddrs",
-			Handler:    _ServiceDiscovery_ListAddrs_Handler,
+			MethodName: "FindServiceByName",
+			Handler:    _ServiceDiscovery_FindServiceByName_Handler,
+		},
+		{
+			MethodName: "Register",
+			Handler:    _ServiceDiscovery_Register_Handler,
+		},
+		{
+			MethodName: "Deregister",
+			Handler:    _ServiceDiscovery_Deregister_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

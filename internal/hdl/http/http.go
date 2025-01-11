@@ -35,7 +35,7 @@ func (h *Handler) Start(port int) {
 	r.HandleFunc("/find", h.find).Methods(http.MethodPost)
 
 	r.HandleFunc("/list-svcs", h.listSvcs).Methods(http.MethodGet)
-	r.HandleFunc("/list-addrs", h.listAddrs).Methods(http.MethodPost)
+	r.HandleFunc("/list-addrs", h.ListAddrsByName).Methods(http.MethodPost)
 
 	h.srv = &http.Server{
 		Handler:      r,
@@ -75,7 +75,7 @@ func (h *Handler) listSvcs(w http.ResponseWriter, r *http.Request) {
 	utils.SuccessResponse(w, http.StatusOK, svcs)
 }
 
-func (h *Handler) listAddrs(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ListAddrsByName(w http.ResponseWriter, r *http.Request) {
 	req := &md.Service{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		zap.L().Debug("failed to decode request", zap.Error(err))
@@ -89,7 +89,7 @@ func (h *Handler) listAddrs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svcs, err := h.ctrl.ListAddrs(r.Context(), req.Name)
+	svcs, err := h.ctrl.ListAddrsByName(r.Context(), req.Name)
 	if err != nil && errors.Is(err, ctrl.ErrAlreadyExists) {
 		utils.ErrResponse(w, http.StatusConflict, err)
 		return

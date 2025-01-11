@@ -5,11 +5,22 @@ option go_package = "github.com/JMURv/api/pb/service-discovery";
 message Empty {}
 
 service ServiceDiscovery {
+  rpc ListNames(Empty) returns (ListNamesMsg);
+  rpc ListAddrsByName(ServiceNameMsg) returns (ListAddrsMsg);
+  rpc ListServices(Empty) returns (ListServiceMsg);
+  rpc FindServiceByName(ServiceNameMsg) returns (ServiceAddressMsg);
   rpc Register(NameAndAddressMsg) returns (Empty);
   rpc Deregister(NameAndAddressMsg) returns (Empty);
-  rpc FindService(ServiceNameMsg) returns (ServiceAddressMsg);
-  rpc ListServices(Empty) returns (ListNamesMsg);
-  rpc ListAddrs(ServiceNameMsg) returns (ListAddrsMsg);
+}
+
+message ServiceMsg {
+  string name = 1;
+  string address = 2;
+  bool is_active = 3;
+}
+
+message ListServiceMsg {
+  repeated ServiceMsg service = 1;
 }
 
 message NameAndAddressMsg {

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/JMURv/service-discovery/internal/ctrl"
 	"github.com/JMURv/service-discovery/mocks"
+	md "github.com/JMURv/service-discovery/pkg/model"
 	"github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -252,7 +253,7 @@ func TestFindSvc(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
 }
 
-func TestListAddrs(t *testing.T) {
+func TestListAddrsByName(t *testing.T) {
 	ctrlMock := gomock.NewController(t)
 	defer ctrlMock.Finish()
 
@@ -264,7 +265,7 @@ func TestListAddrs(t *testing.T) {
 	expRes := []string{"http://localhost:8080", "http://localhost:8081"}
 
 	// Test case 1: Success
-	ctrlRepo.EXPECT().ListAddrs(gomock.Any(), name).Return(expRes, nil).Times(1)
+	ctrlRepo.EXPECT().ListAddrsByName(gomock.Any(), name).Return(expRes, nil).Times(1)
 
 	payload, _ := json.Marshal(map[string]string{"name": name})
 	req := httptest.NewRequest(http.MethodPost, "/list-addrs", bytes.NewBuffer(payload))
@@ -272,11 +273,11 @@ func TestListAddrs(t *testing.T) {
 	req = req.WithContext(ctx)
 
 	w := httptest.NewRecorder()
-	hdl.listAddrs(w, req)
+	hdl.ListAddrsByName(w, req)
 	assert.Equal(t, http.StatusOK, w.Result().StatusCode)
 
 	// Test case 2: ErrAlreadyExists
-	ctrlRepo.EXPECT().ListAddrs(gomock.Any(), name).Return([]string{}, ctrl.ErrAlreadyExists).Times(1)
+	ctrlRepo.EXPECT().ListAddrsByName(gomock.Any(), name).Return([]string{}, ctrl.ErrAlreadyExists).Times(1)
 
 	payload, _ = json.Marshal(map[string]string{"name": name})
 	req = httptest.NewRequest(http.MethodPost, "/list-addrs", bytes.NewBuffer(payload))
@@ -284,12 +285,12 @@ func TestListAddrs(t *testing.T) {
 	req = req.WithContext(ctx)
 
 	w = httptest.NewRecorder()
-	hdl.listAddrs(w, req)
+	hdl.ListAddrsByName(w, req)
 	assert.Equal(t, http.StatusConflict, w.Result().StatusCode)
 
 	// Test case 3: ErrInternalError
 	var ErrOther = errors.New("other error")
-	ctrlRepo.EXPECT().ListAddrs(gomock.Any(), name).Return([]string{}, ErrOther).Times(1)
+	ctrlRepo.EXPECT().ListAddrsByName(gomock.Any(), name).Return([]string{}, ErrOther).Times(1)
 
 	payload, _ = json.Marshal(map[string]string{"name": name})
 	req = httptest.NewRequest(http.MethodPost, "/list-addrs", bytes.NewBuffer(payload))
@@ -297,7 +298,7 @@ func TestListAddrs(t *testing.T) {
 	req = req.WithContext(ctx)
 
 	w = httptest.NewRecorder()
-	hdl.listAddrs(w, req)
+	hdl.ListAddrsByName(w, req)
 	assert.Equal(t, http.StatusInternalServerError, w.Result().StatusCode)
 
 	// Test case 4: ErrDecodeRequest
@@ -307,7 +308,7 @@ func TestListAddrs(t *testing.T) {
 	req = req.WithContext(ctx)
 
 	w = httptest.NewRecorder()
-	hdl.listAddrs(w, req)
+	hdl.ListAddrsByName(w, req)
 	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
 
 	// Test case 5: ErrDecodeRequest
@@ -317,7 +318,7 @@ func TestListAddrs(t *testing.T) {
 	req = req.WithContext(ctx)
 
 	w = httptest.NewRecorder()
-	hdl.listAddrs(w, req)
+	hdl.ListAddrsByName(w, req)
 	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
 
 	// Test case 6: Invalid JSOM
@@ -327,7 +328,7 @@ func TestListAddrs(t *testing.T) {
 	req = req.WithContext(ctx)
 
 	w = httptest.NewRecorder()
-	hdl.listAddrs(w, req)
+	hdl.ListAddrsByName(w, req)
 	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
 }
 
@@ -339,7 +340,7 @@ func TestListSvcs(t *testing.T) {
 	hdl := New(ctrlRepo)
 
 	ctx := context.Background()
-	expRes := []string{"http://localhost:8080", "http://localhost:8081"}
+	expRes := []md.Service{{Name: "1", Address: "1"}, {Name: "2", Address: "2"}}
 
 	// Test case 1: Success
 	ctrlRepo.EXPECT().ListServices(gomock.Any()).Return(expRes, nil).Times(1)
@@ -353,7 +354,7 @@ func TestListSvcs(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Result().StatusCode)
 
 	// Test case 2: ErrAlreadyExists
-	ctrlRepo.EXPECT().ListServices(gomock.Any()).Return([]string{}, ctrl.ErrAlreadyExists).Times(1)
+	ctrlRepo.EXPECT().ListServices(gomock.Any()).Return([]md.Service{}, ctrl.ErrAlreadyExists).Times(1)
 
 	req = httptest.NewRequest(http.MethodGet, "/list-svcs", nil)
 	req.Header.Set("Content-Type", "application/json")
@@ -365,7 +366,7 @@ func TestListSvcs(t *testing.T) {
 
 	// Test case 3: ErrInternalError
 	var ErrOther = errors.New("other error")
-	ctrlRepo.EXPECT().ListServices(gomock.Any()).Return([]string{}, ErrOther).Times(1)
+	ctrlRepo.EXPECT().ListServices(gomock.Any()).Return([]md.Service{}, ErrOther).Times(1)
 
 	req = httptest.NewRequest(http.MethodGet, "/list-svcs", nil)
 	req.Header.Set("Content-Type", "application/json")
