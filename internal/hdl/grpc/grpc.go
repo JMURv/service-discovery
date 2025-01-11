@@ -21,7 +21,7 @@ type Ctrl interface {
 	ListAddrsByName(ctx context.Context, name string) ([]string, error)
 	ListServices(ctx context.Context) ([]md.Service, error)
 	FindServiceByName(ctx context.Context, name string) (string, error)
-	Register(ctx context.Context, name, addr string) error
+	Register(ctx context.Context, name, addr string, svcType md.SvcType) error
 	Deregister(ctx context.Context, name, addr string) error
 }
 
@@ -97,13 +97,13 @@ func (h *Handler) ListServices(ctx context.Context, _ *pb.Empty) (*pb.ListServic
 	}, nil
 }
 
-func (h *Handler) Register(ctx context.Context, req *pb.NameAndAddressMsg) (*pb.Empty, error) {
-	if req == nil || req.Name == "" || req.Address == "" {
+func (h *Handler) Register(ctx context.Context, req *pb.RegisterMsg) (*pb.Empty, error) {
+	if req == nil || req.Name == "" || req.Address == "" || req.Type == "" {
 		zap.L().Error("failed to decode request")
 		return nil, status.Errorf(codes.InvalidArgument, ctrl.ErrDecodeRequest.Error())
 	}
 
-	err := h.ctrl.Register(ctx, req.Name, req.Address)
+	err := h.ctrl.Register(ctx, req.Name, req.Address, md.SvcType(req.Type))
 	if err != nil && errors.Is(err, ctrl.ErrAlreadyExists) {
 		return nil, status.Errorf(codes.AlreadyExists, err.Error())
 	} else if err != nil {

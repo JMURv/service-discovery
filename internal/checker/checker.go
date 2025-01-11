@@ -20,30 +20,23 @@ type Checker struct {
 	repo           ctrl.ServiceDiscoveryRepo
 	newAddrChan    chan md.Service
 	failedAttempts map[string]map[string]int
-	req            config.AcceptReq
 }
 
-func New(repo ctrl.ServiceDiscoveryRepo, newAddr chan md.Service, conf *config.CheckerConfig, req config.AcceptReq) *Checker {
+func New(repo ctrl.ServiceDiscoveryRepo, newAddr chan md.Service, conf *config.CheckerConfig) *Checker {
 	return &Checker{
 		repo:           repo,
 		newAddrChan:    newAddr,
 		failedAttempts: make(map[string]map[string]int),
 		conf:           conf,
-		req:            req,
 	}
 }
 
 func (c *Checker) Start(ctx context.Context) {
 	go c.listenForNewAddresses(ctx)
 
-	svcs, err := c.repo.ListServices(ctx)
-	if err != nil {
-		zap.L().Debug("failed to list services", zap.Error(err))
-		return
-	}
-
+	svcs, _ := c.repo.ListServices(ctx)
 	for i := 0; i < len(svcs); i++ {
-		go c.worker(ctx, svcs[i].Name, svcs[i].Address)
+		go c.worker(ctx, svcs[i].Name, svcs[i].Address, svcs[i].SvcType)
 	}
 
 	zap.L().Info("health check started")
@@ -56,11 +49,11 @@ func (c *Checker) Start(ctx context.Context) {
 
 func (c *Checker) listenForNewAddresses(ctx context.Context) {
 	for newSvc := range c.newAddrChan {
-		go c.worker(ctx, newSvc.Name, newSvc.Address)
+		go c.worker(ctx, newSvc.Name, newSvc.Address, newSvc.SvcType)
 	}
 }
 
-func (c *Checker) worker(ctx context.Context, name, addr string) {
+func (c *Checker) worker(ctx context.Context, name, addr string, svcType md.SvcType) {
 	if _, exists := c.failedAttempts[name]; !exists {
 		c.failedAttempts[name] = make(map[string]int)
 	}
@@ -72,12 +65,12 @@ func (c *Checker) worker(ctx context.Context, name, addr string) {
 			return
 		default:
 			time.Sleep(time.Duration(c.conf.CooldownReq) * time.Second)
-			var err error
 
-			switch c.req {
-			case config.HTTP:
+			var err error
+			switch svcType {
+			case md.HTTP:
 				err = c.HTTPReq(name, addr)
-			case config.GRPC:
+			case md.GRPC:
 				err = c.gRPCReq(name, addr)
 			}
 
@@ -122,7 +115,6 @@ func (c *Checker) worker(ctx context.Context, name, addr string) {
 				}
 				delete(c.failedAttempts[name], addr)
 			}
-
 		}
 	}
 }

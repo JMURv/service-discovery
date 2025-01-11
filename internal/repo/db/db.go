@@ -109,7 +109,7 @@ func (r *Repository) FindServiceByName(ctx context.Context, name string) (string
 	return selectedAddr, nil
 }
 
-func (r *Repository) Register(ctx context.Context, name, addr string) error {
+func (r *Repository) Register(ctx context.Context, name, addr string, svcType md.SvcType) error {
 	var svc md.Service
 
 	if err := r.conn.WithContext(ctx).
@@ -118,7 +118,7 @@ func (r *Repository) Register(ctx context.Context, name, addr string) error {
 		return repo.ErrAlreadyExists
 	}
 
-	service := md.Service{Name: name, Address: addr}
+	service := md.Service{Name: name, Address: addr, SvcType: svcType, IsActive: true}
 	if err := r.conn.WithContext(ctx).Create(&service).Error; err != nil {
 		return err
 	}

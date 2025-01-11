@@ -9,7 +9,7 @@ service ServiceDiscovery {
   rpc ListAddrsByName(ServiceNameMsg) returns (ListAddrsMsg);
   rpc ListServices(Empty) returns (ListServiceMsg);
   rpc FindServiceByName(ServiceNameMsg) returns (ServiceAddressMsg);
-  rpc Register(NameAndAddressMsg) returns (Empty);
+  rpc Register(RegisterMsg) returns (Empty);
   rpc Deregister(NameAndAddressMsg) returns (Empty);
 }
 
@@ -21,6 +21,12 @@ message ServiceMsg {
 
 message ListServiceMsg {
   repeated ServiceMsg service = 1;
+}
+
+message RegisterMsg {
+  string name = 1;
+  string address = 2;
+  string type = 3;
 }
 
 message NameAndAddressMsg {

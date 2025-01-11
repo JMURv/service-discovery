@@ -15,7 +15,7 @@ type ServiceDiscoveryRepo interface {
 	ListAddrsByName(ctx context.Context, name string) ([]string, error)
 	ListServices(ctx context.Context) ([]md.Service, error)
 	FindServiceByName(ctx context.Context, name string) (string, error)
-	Register(ctx context.Context, name, addr string) error
+	Register(ctx context.Context, name, addr string, svcType md.SvcType) error
 	Deregister(ctx context.Context, name, addr string) error
 	DeactivateSvc(_ context.Context, name, addr string) error
 	ActivateSvc(ctx context.Context, name, addr string) error
@@ -88,8 +88,8 @@ func (c *Controller) FindServiceByName(ctx context.Context, name string) (string
 	return addr, nil
 }
 
-func (c *Controller) Register(ctx context.Context, name, addr string) error {
-	if err := c.repo.Register(ctx, name, addr); err != nil && errors.Is(err, repo.ErrAlreadyExists) {
+func (c *Controller) Register(ctx context.Context, name, addr string, svcType md.SvcType) error {
+	if err := c.repo.Register(ctx, name, addr, svcType); err != nil && errors.Is(err, repo.ErrAlreadyExists) {
 		zap.L().Debug(
 			"Error svc already registered",
 			zap.String("name", name), zap.String("address", addr),
@@ -103,7 +103,7 @@ func (c *Controller) Register(ctx context.Context, name, addr string) error {
 		return err
 	}
 
-	c.newAddrChan <- md.Service{Name: name, Address: addr}
+	c.newAddrChan <- md.Service{Name: name, Address: addr, SvcType: svcType}
 	zap.L().Debug(
 		"Registered svc",
 		zap.String("name", name), zap.String("address", addr),

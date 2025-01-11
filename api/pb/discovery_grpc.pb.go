@@ -35,7 +35,7 @@ type ServiceDiscoveryClient interface {
 	ListAddrsByName(ctx context.Context, in *ServiceNameMsg, opts ...grpc.CallOption) (*ListAddrsMsg, error)
 	ListServices(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ListServiceMsg, error)
 	FindServiceByName(ctx context.Context, in *ServiceNameMsg, opts ...grpc.CallOption) (*ServiceAddressMsg, error)
-	Register(ctx context.Context, in *NameAndAddressMsg, opts ...grpc.CallOption) (*Empty, error)
+	Register(ctx context.Context, in *RegisterMsg, opts ...grpc.CallOption) (*Empty, error)
 	Deregister(ctx context.Context, in *NameAndAddressMsg, opts ...grpc.CallOption) (*Empty, error)
 }
 
@@ -87,7 +87,7 @@ func (c *serviceDiscoveryClient) FindServiceByName(ctx context.Context, in *Serv
 	return out, nil
 }
 
-func (c *serviceDiscoveryClient) Register(ctx context.Context, in *NameAndAddressMsg, opts ...grpc.CallOption) (*Empty, error) {
+func (c *serviceDiscoveryClient) Register(ctx context.Context, in *RegisterMsg, opts ...grpc.CallOption) (*Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Empty)
 	err := c.cc.Invoke(ctx, ServiceDiscovery_Register_FullMethodName, in, out, cOpts...)
@@ -115,7 +115,7 @@ type ServiceDiscoveryServer interface {
 	ListAddrsByName(context.Context, *ServiceNameMsg) (*ListAddrsMsg, error)
 	ListServices(context.Context, *Empty) (*ListServiceMsg, error)
 	FindServiceByName(context.Context, *ServiceNameMsg) (*ServiceAddressMsg, error)
-	Register(context.Context, *NameAndAddressMsg) (*Empty, error)
+	Register(context.Context, *RegisterMsg) (*Empty, error)
 	Deregister(context.Context, *NameAndAddressMsg) (*Empty, error)
 	mustEmbedUnimplementedServiceDiscoveryServer()
 }
@@ -139,7 +139,7 @@ func (UnimplementedServiceDiscoveryServer) ListServices(context.Context, *Empty)
 func (UnimplementedServiceDiscoveryServer) FindServiceByName(context.Context, *ServiceNameMsg) (*ServiceAddressMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FindServiceByName not implemented")
 }
-func (UnimplementedServiceDiscoveryServer) Register(context.Context, *NameAndAddressMsg) (*Empty, error) {
+func (UnimplementedServiceDiscoveryServer) Register(context.Context, *RegisterMsg) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
 }
 func (UnimplementedServiceDiscoveryServer) Deregister(context.Context, *NameAndAddressMsg) (*Empty, error) {
@@ -239,7 +239,7 @@ func _ServiceDiscovery_FindServiceByName_Handler(srv interface{}, ctx context.Co
 }
 
 func _ServiceDiscovery_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NameAndAddressMsg)
+	in := new(RegisterMsg)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func _ServiceDiscovery_Register_Handler(srv interface{}, ctx context.Context, de
 		FullMethod: ServiceDiscovery_Register_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServiceDiscoveryServer).Register(ctx, req.(*NameAndAddressMsg))
+		return srv.(ServiceDiscoveryServer).Register(ctx, req.(*RegisterMsg))
 	}
 	return interceptor(ctx, in, info, handler)
 }

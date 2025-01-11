@@ -59,14 +59,14 @@ func main() {
 	}
 
 	newAddrChan := make(chan md.Service)
-	check := checker.New(repo, newAddrChan, conf.Checker, conf.Checker.Req)
+	check := checker.New(repo, newAddrChan, conf.Checker)
 	svc := ctrl.New(repo, newAddrChan)
 
 	var h Handler
-	switch conf.AcceptReq {
-	case cfg.HTTP:
+	switch conf.SvcType {
+	case md.HTTP:
 		h = http.New(svc)
-	case cfg.GRPC:
+	case md.GRPC:
 		h = grpc.New(svc)
 	default:
 		zap.L().Fatal("Unsupported handler type in configuration")

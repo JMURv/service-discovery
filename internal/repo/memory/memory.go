@@ -103,7 +103,7 @@ func (r *Repository) FindServiceByName(_ context.Context, name string) (string, 
 	return selectedSvc.Address, nil
 }
 
-func (r *Repository) Register(_ context.Context, name, addr string) error {
+func (r *Repository) Register(_ context.Context, name, addr string, svcType md.SvcType) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -113,7 +113,7 @@ func (r *Repository) Register(_ context.Context, name, addr string) error {
 		}
 	}
 
-	r.services = append(r.services, md.Service{Name: name, Address: addr, IsActive: true})
+	r.services = append(r.services, md.Service{Name: name, Address: addr, SvcType: svcType, IsActive: true})
 	return nil
 }
 

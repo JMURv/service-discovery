@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/JMURv/service-discovery/pkg/model"
 	"gopkg.in/yaml.v3"
 	"os"
 )
@@ -12,18 +13,11 @@ const (
 	SQLite DB = "sqlite"
 )
 
-type AcceptReq string
-
-const (
-	GRPC AcceptReq = "grpc"
-	HTTP AcceptReq = "http"
-)
-
 type Config struct {
-	DB        DB             `yaml:"db" env-default:"in-mem"`
-	AcceptReq AcceptReq      `yaml:"accept-req" env-default:"grpc"`
-	Server    *ServerConfig  `yaml:"server"`
-	Checker   *CheckerConfig `yaml:"checker"`
+	DB      DB             `yaml:"db" env-default:"in-mem"`
+	SvcType model.SvcType  `yaml:"accept-req" env-default:"grpc"`
+	Server  *ServerConfig  `yaml:"server"`
+	Checker *CheckerConfig `yaml:"checker"`
 }
 
 type ServerConfig struct {
@@ -34,9 +28,9 @@ type ServerConfig struct {
 }
 
 type CheckerConfig struct {
-	Req           AcceptReq `yaml:"req" env-default:"grpc"`
-	MaxRetriesReq int       `yaml:"max_retries_req" env-default:"3"`
-	CooldownReq   int       `yaml:"cooldown_req" env-default:"5"`
+	Req           model.SvcType `yaml:"req" env-default:"grpc"`
+	MaxRetriesReq int           `yaml:"max_retries_req" env-default:"3"`
+	CooldownReq   int           `yaml:"cooldown_req" env-default:"5"`
 }
 
 func MustLoad(configPath string) *Config {

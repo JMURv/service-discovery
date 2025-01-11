@@ -119,7 +119,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.ctrl.Register(r.Context(), req.Name, req.Address)
+	err := h.ctrl.Register(r.Context(), req.Name, req.Address, req.SvcType)
 	if err != nil && errors.Is(err, ctrl.ErrAlreadyExists) {
 		utils.ErrResponse(w, http.StatusConflict, err)
 		return
