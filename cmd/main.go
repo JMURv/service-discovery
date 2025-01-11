@@ -62,22 +62,24 @@ func main() {
 	check := checker.New(repo, newAddrChan, conf.Checker)
 	svc := ctrl.New(repo, newAddrChan)
 
-	var h Handler
-	switch conf.SvcType {
-	case md.HTTP:
-		h = http.New(svc)
-	case md.GRPC:
-		h = grpc.New(svc)
-	default:
-		zap.L().Fatal("Unsupported handler type in configuration")
-	}
+	httpH := http.New(svc)
+	grpcH := grpc.New(svc)
 
 	// Start service
 	zap.L().Info(
-		fmt.Sprintf("Starting server on %v://%v:%v", conf.Server.Scheme, conf.Server.Domain, conf.Server.Port),
+		fmt.Sprintf(
+			"HTTP is running on %v://%v:%v || GRPC is running on %v://%v:%v",
+			conf.Server.Scheme,
+			conf.Server.Domain,
+			conf.Server.Port,
+			conf.Server.Scheme,
+			conf.Server.Domain,
+			conf.Server.Port+1,
+		),
 	)
 	go check.Start(ctx)
-	go h.Start(conf.Server.Port)
+	go httpH.Start(conf.Server.Port)
+	go grpcH.Start(conf.Server.Port + 1)
 
 	// Graceful shutdown
 	c := make(chan os.Signal, 1)
@@ -90,7 +92,11 @@ func main() {
 		zap.L().Warn("failed to close repo", zap.Error(err))
 	}
 
-	if err := h.Close(); err != nil {
-		zap.L().Warn("failed to close handler", zap.Error(err))
+	if err := httpH.Close(); err != nil {
+		zap.L().Warn("failed to close http handler", zap.Error(err))
+	}
+
+	if err := grpcH.Close(); err != nil {
+		zap.L().Warn("failed to close grpc handler", zap.Error(err))
 	}
 }
